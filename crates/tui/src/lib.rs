@@ -31,10 +31,10 @@ impl BlinkRenderer {
             terminal.draw(|f| {
                 let size = f.area();
                 f.render_widget(&*self, size);
-            }).context("ERROR: Drawing the renderer to the terminal")?;
+            }).context("ERROR: Drawing the renderer to the terminal.")?;
 
             // Event handling.
-            let events = poll_events().context("ERROR: polling events")?;
+            let events = poll_events().context("ERROR: polling events.")?;
             for event in events {
                 let commands = handle_event(event);
                 for command in commands {
