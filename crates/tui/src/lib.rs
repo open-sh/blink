@@ -12,6 +12,13 @@ pub struct BlinkRenderer {
 }
 
 impl BlinkRenderer {
+    pub fn new(message: String) -> Self {
+        Self {
+            message,
+            should_quit: false
+        }
+    }
+
     /// Initializes the terminal using the default `init` function from `ratatui`, returns
     /// a `DefaultTerminal` to be manipulated by the renderer.
     pub fn init(&self) -> DefaultTerminal {
@@ -56,7 +63,7 @@ impl BlinkRenderer {
 
 /// Widget means that `BlinkRenderer` will be drawn on a `Buffer` on a given `Rect`.
 ///
-/// NOTE: Passing `BlinkRenderer` by reference to avoid consumption, and it's just a reading
+/// NOTE: Passing `BlinkRenderer` by reference to avoid consumption, since it's just a reading
 /// operating anyways.
 impl Widget for &BlinkRenderer {
     fn render(self, area: Rect, buf: &mut Buffer)

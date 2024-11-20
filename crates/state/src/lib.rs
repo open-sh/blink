@@ -1,20 +1,23 @@
+use config::BlinkConfig;
 use tui::BlinkRenderer;
 use anyhow::Result;
 
 /// Main state of the application.
 pub struct BlinkState {
-    pub renderer: BlinkRenderer
+    pub renderer: BlinkRenderer,
+    pub config: BlinkConfig
 }
 
 impl BlinkState {
-    pub fn new() -> Self {
-        let message = String::from("Hello, Blink");
+    /// The states gets initialized only after the config is loaded.
+    /// This happens so that we can inject properties (if they exist)
+    /// from the `BlinkConfig` (global and/or local) into the `BlinkState`.
+    pub fn new(config: BlinkConfig) -> Self {
+        let message = config.mock.clone().unwrap_or_else(|| "Hello not from the config".to_string());
 
         Self {
-            renderer: BlinkRenderer {
-                message,
-                should_quit: false,
-            }
+            renderer: BlinkRenderer::new(message),
+            config,
         }
     }
 

@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 tui = { path = "../tui" }
+config = { path = "../config" }
 anyhow = { workspace = true}
