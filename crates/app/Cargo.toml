@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 state = { path = "../state" }
+utils = { path = "../utils" }
 anyhow = { workspace = true }
