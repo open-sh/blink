@@ -1,3 +1,5 @@
+// TODO: Add Clap for the cli of this project.
+
 use config::BlinkConfig;
 use state::BlinkState;
 use anyhow::Result;

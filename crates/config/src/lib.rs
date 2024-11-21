@@ -13,7 +13,6 @@ pub struct BlinkConfig {
 
 impl BlinkConfig {
     /// Loads and merges global and local configurations.
-    /// TODO: Global config.
     pub fn load() -> Result<Self> {
         let local_config = Self::load_local_config()?;
 
