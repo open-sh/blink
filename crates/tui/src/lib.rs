@@ -1,29 +1,22 @@
-use events::{handle_event, poll_events, BlinkCommand};
-use ratatui::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget, DefaultTerminal};
 use anyhow::{Context, Result};
+use ratatui::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget, DefaultTerminal};
 
-mod events;
+pub mod events;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
-#[derive(Default)]
 pub struct BlinkRenderer {
     pub message: String,
-    pub should_quit: bool,
 }
 
 impl BlinkRenderer {
     pub fn new(message: String) -> Self {
-        Self {
-            message,
-            should_quit: false
-        }
+        Self { message }
     }
 
     /// Initializes the terminal using the default `init` function from `ratatui`, returns
     /// a `DefaultTerminal` to be manipulated by the renderer.
     pub fn init(&self) -> DefaultTerminal {
-        let terminal = ratatui::init(); // This uses `crossterm` as a backend.
-        return terminal;
+        ratatui::init() // This uses `crossterm` as a backend.
     }
 
     /// Restores the terminal.
@@ -32,32 +25,19 @@ impl BlinkRenderer {
     }
 
     /// Draw the UI.
-    pub fn draw(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        loop {
-            // Rendering.
-            terminal.draw(|f| {
+    pub fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        terminal
+            .draw(|f| {
                 let size = f.area();
                 f.render_widget(&*self, size);
-            }).context("ERROR: Drawing the renderer to the terminal.")?;
-
-            // Event handling.
-            let events = poll_events().context("ERROR: polling events.")?;
-            for event in events {
-                let commands = handle_event(event);
-                for command in commands {
-                    match command {
-                        BlinkCommand::Quit => self.should_quit = true,
-                    }
-                }
-            }
-
-            // Check if we should quit.
-            if self.should_quit {
-                break;
-            }
-        }
+            })
+            .context("ERROR: Drawing the renderer to the terminal.")?;
 
         Ok(())
+    }
+
+    pub fn update_message(&mut self, new_message: String) {
+        self.message = new_message;
     }
 }
 

@@ -1,8 +1,8 @@
 // TODO: Add Clap for the cli of this project.
 
+use anyhow::Result;
 use config::BlinkConfig;
 use state::BlinkState;
-use anyhow::Result;
 use utils::init_logging;
 
 fn main() -> Result<()> {
@@ -10,6 +10,6 @@ fn main() -> Result<()> {
 
     let config = BlinkConfig::load()?;
 
-    let mut blink_state = BlinkState::new(config);
+    let mut blink_state = BlinkState::new(config)?;
     blink_state.run()
 }
