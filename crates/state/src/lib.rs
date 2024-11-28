@@ -34,8 +34,11 @@ impl BlinkState {
 
         // Clone of sender channel to move to thread.
         let watcher_tx = config_watcher_tx.clone();
+        let config_path = Path::new(".");
 
         std::thread::spawn(move || {
+            assert!(config_path.is_dir(), "The current path '.' is not a valid directory");
+
             let mut watcher: RecommendedWatcher =
                 match Watcher::new(watcher_tx, notify::Config::default()) {
                     Ok(w) => w,
@@ -48,7 +51,7 @@ impl BlinkState {
             // NOTE: Watching the current path instead of the actual `blink.toml` file because some editors
             // like Neovim have weird writing patterns. To avoid conflicts with any kind of editors, it's easier
             // watch over the current path.
-            if let Err(e) = watcher.watch(Path::new("."), notify::RecursiveMode::NonRecursive) {
+            if let Err(e) = watcher.watch(config_path, notify::RecursiveMode::NonRecursive) {
                 error!("ERROR: Watching config file: {:?}", e)
             }
 
@@ -64,6 +67,7 @@ impl BlinkState {
     }
 
     pub fn run(&mut self) -> Result<()> {
+        assert!(!self.should_quit, "The `should_quit` property should start as `false`");
         let mut terminal = self.renderer.init();
 
         loop {
