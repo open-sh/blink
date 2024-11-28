@@ -1,5 +1,9 @@
 use anyhow::{Context, Result};
-use ratatui::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget, DefaultTerminal};
+use ratatui::{
+    layout::{Constraint, Direction, Layout, Rect},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
+    DefaultTerminal, Frame,
+};
 
 pub mod events;
 
@@ -24,37 +28,88 @@ impl BlinkRenderer {
         ratatui::restore()
     }
 
-    /// Draw the UI.
+    /// Draw the UI based on a `terminal`.
     pub fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         terminal
             .draw(|f| {
-                let size = f.area();
-                f.render_widget(&*self, size);
+                self.draw_blink(f);
             })
             .context("ERROR: Drawing the renderer to the terminal.")?;
 
         Ok(())
     }
 
+    pub fn draw_blink(&mut self, f: &mut Frame) {
+        let size = f.area();
+
+        // This creates the main vertical layout.
+        let horizontal_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(30), // Fixed width for lateral requests bar.
+                Constraint::Min(0),     // Remaining space for main content.
+            ])
+            .split(size);
+
+        let side_panel_area = horizontal_chunks[0];
+        let main_area = horizontal_chunks[1];
+
+        let vertical_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3), // Fixed height for URL entry.
+                Constraint::Min(0),    // Editor for the rest.
+            ])
+            .split(main_area);
+
+        let url_panel_area = vertical_chunks[0];
+        let editor_area = vertical_chunks[1];
+
+        // Render widgets in each area
+        self.render_url_input(f, url_panel_area);
+        self.render_side_panel(f, side_panel_area);
+        self.render_editor(f, editor_area);
+    }
+
     pub fn update_message(&mut self, new_message: String) {
         self.message = new_message;
     }
-}
 
-/// Widget means that `BlinkRenderer` will be drawn on a `Buffer` on a given `Rect`.
-///
-/// NOTE: Passing `BlinkRenderer` by reference to avoid consumption, since it's just a reading
-/// operating anyways.
-impl Widget for &BlinkRenderer {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
-        buf.set_style(area, Style::default());
+    //
+    // Widget rendering.
+    //
 
-        let x = area.x + (area.width.saturating_sub(self.message.len() as u16)) / 2;
-        let y = area.y + area.height / 2;
+    pub fn render_url_input(&mut self, f: &mut Frame, area: Rect) {
+        let url_input =
+            Paragraph::new("we gucci").block(Block::default().borders(Borders::ALL).title("URL"));
 
-        buf.set_string(x, y, &self.message, Style::default());
+        f.render_widget(url_input, area);
+    }
+
+    pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {
+        let request_list: Vec<String> = vec![
+            "request 1".to_string(),
+            "request 2".to_string(),
+            "request 3".to_string(),
+            "request 4".to_string(),
+            "request 5".to_string(),
+        ];
+        let items: Vec<ListItem> = request_list
+            .iter()
+            .map(|request| ListItem::new(request.clone()))
+            .collect();
+
+        let requests =
+            List::new(items).block(Block::default().borders(Borders::ALL).title("Requests"));
+
+        f.render_widget(requests, area);
+    }
+
+    pub fn render_editor(&mut self, f: &mut Frame, area: Rect) {
+        let request_body: String = String::from(self.message.clone());
+        let editor = Paragraph::new(request_body)
+            .block(Block::default().borders(Borders::ALL).title("Request Body"));
+
+        f.render_widget(editor, area);
     }
 }
