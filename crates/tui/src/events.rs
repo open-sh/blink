@@ -13,6 +13,7 @@ pub enum Event {
 /// Any sort of high-level command.
 pub enum BlinkCommand {
     Quit,
+    ToggleFocus, // REFACTOR: Directional focus?
 }
 
 /// Capture events from the terminal and return them into a Vector.
@@ -36,6 +37,8 @@ pub fn poll_events() -> Result<Vec<Event>> {
 /// Maps `CrosstermEvent` to a Vec<BlinkCommand>.
 ///
 /// TODO: Add Mode into the parameters of this function.
+/// TODO: Add FocusArea so that we can have specific keybindings dependeing upon
+/// where the user is currently focused.
 pub fn handle_event(event: Event) -> Vec<BlinkCommand> {
     let mut commands = Vec::new();
 
@@ -43,6 +46,7 @@ pub fn handle_event(event: Event) -> Vec<BlinkCommand> {
         Event::KeyPress(key_event) => match key_event.code {
             // TODO: Send `key_event` into `handle_key_event()` so that I can match the mode.
             KeyCode::Char('q') => commands.push(BlinkCommand::Quit),
+            KeyCode::Tab => commands.push(BlinkCommand::ToggleFocus),
             _ => {}
         },
         Event::_Mock => {}

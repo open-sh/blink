@@ -7,7 +7,7 @@ use std::{
 };
 use tui::{
     events::{handle_event, poll_events, BlinkCommand},
-    BlinkRenderer,
+    BlinkRenderer, FocusArea,
 };
 use utils::{error, info};
 
@@ -96,6 +96,7 @@ impl BlinkState {
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
+                    BlinkCommand::ToggleFocus => self.toggle_focus(),
                 }
             }
         }
@@ -158,5 +159,14 @@ impl BlinkState {
 
         info!("Config reloaded.");
         Ok(())
+    }
+
+    /// Toggle focus between different areas of the TUI.
+    pub fn toggle_focus(&mut self) {
+        self.renderer.focus_area = match self.renderer.focus_area {
+            FocusArea::SidePanel => FocusArea::URLInput,
+            FocusArea::URLInput => FocusArea::Editor,
+            FocusArea::Editor => FocusArea::SidePanel,
+        }
     }
 }

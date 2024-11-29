@@ -3,7 +3,7 @@ use config::HTTPRequest;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal, Frame,
 };
 
@@ -13,11 +13,24 @@ pub mod events;
 pub struct BlinkRenderer {
     pub message: String,
     pub requests: Vec<HTTPRequest>,
+    pub focus_area: FocusArea,
+}
+
+/// Determines the direction in which the cursor focus takes place.
+#[derive(PartialEq)]
+pub enum FocusArea {
+    SidePanel,
+    URLInput,
+    Editor,
 }
 
 impl BlinkRenderer {
     pub fn new(message: String, requests: Vec<HTTPRequest>) -> Self {
-        Self { message, requests }
+        Self {
+            message,
+            requests,
+            focus_area: FocusArea::URLInput,
+        }
     }
 
     /// Initializes the terminal using the default `init` function from `ratatui`, returns
@@ -91,9 +104,16 @@ impl BlinkRenderer {
     //
 
     pub fn render_url_input(&mut self, f: &mut Frame, area: Rect) {
-        let url_input =
-            Paragraph::new("we gucci").block(Block::default().borders(Borders::ALL).title("URL"));
+        let block = if self.focus_area == FocusArea::URLInput {
+            Block::default()
+                .borders(Borders::ALL)
+                .title("URL")
+                .border_style(Style::default().fg(Color::Yellow))
+        } else {
+            Block::default().borders(Borders::ALL).title("URL")
+        };
 
+        let url_input = Paragraph::new("we gucci").block(block);
         f.render_widget(url_input, area);
     }
 
@@ -104,20 +124,42 @@ impl BlinkRenderer {
             .map(|request| ListItem::new(request.name.clone()))
             .collect();
 
-        let block = Block::default().borders(Borders::ALL).title("Requests");
+        // Determine the block style based on the focus.
+        // TODO: Should probably put all color related things into globals/config.
+        let block = if self.focus_area == FocusArea::SidePanel {
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Requests")
+                .border_style(Style::default().fg(Color::Yellow)) // Yellow style when focused.
+        } else {
+            Block::default().borders(Borders::ALL).title("Requests")
+        };
+
+        let mut state = ListState::default();
+        if !self.requests.is_empty() {
+            state.select(Some(0)); // Initial request selection.
+        }
 
         let requests = List::new(items)
             .block(block)
             .highlight_style(Style::default().bg(Color::Blue))
             .highlight_symbol("> ");
 
-        f.render_widget(requests, area);
+        f.render_stateful_widget(requests, area, &mut state);
     }
 
     pub fn render_editor(&mut self, f: &mut Frame, area: Rect) {
+        let block = if self.focus_area == FocusArea::Editor {
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Request body")
+                .border_style(Style::default().fg(Color::Yellow)) // Yellow style when focused.
+        } else {
+            Block::default().borders(Borders::ALL).title("Request body")
+        };
+
         let request_body: String = String::from(self.message.clone());
-        let editor = Paragraph::new(request_body)
-            .block(Block::default().borders(Borders::ALL).title("Request Body"));
+        let editor = Paragraph::new(request_body).block(block);
 
         f.render_widget(editor, area);
     }
