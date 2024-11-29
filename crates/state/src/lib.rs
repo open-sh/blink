@@ -25,10 +25,13 @@ impl BlinkState {
     /// This happens so that we can inject properties (if they exist)
     /// from the `BlinkConfig` (global and/or local) into the `BlinkState`.
     pub fn new(config: BlinkConfig) -> Result<Self> {
+        // Renderer variables.
         let message = config
-            .mock
+            .message
             .clone()
             .unwrap_or_else(|| "Hello not from the config".to_string());
+
+        let requests = config.local_requests.requests.clone();
 
         let (config_watcher_tx, config_watcher_rx) = channel();
 
@@ -59,7 +62,7 @@ impl BlinkState {
         });
 
         Ok(Self {
-            renderer: BlinkRenderer::new(message),
+            renderer: BlinkRenderer::new(message, requests),
             config,
             config_watcher_rx,
             should_quit: false,
@@ -138,20 +141,22 @@ impl BlinkState {
         Ok(())
     }
 
-    /// Reload config from `blink.toml`.
+    /// Reload config from `blink.toml` (local).
     fn reload_config(&mut self) -> Result<()> {
         info!("Reloading config...");
         self.config = BlinkConfig::load().context("ERROR: Loading configuration during reload")?;
 
         let new_message = self
             .config
-            .mock
+            .message
             .clone()
             .unwrap_or_else(|| "Hello not from the config".to_string());
         self.renderer.update_message(new_message);
 
-        info!("Config reloaded.");
+        let new_requests = self.config.local_requests.requests.clone();
+        self.renderer.update_requests(new_requests);
 
+        info!("Config reloaded.");
         Ok(())
     }
 }

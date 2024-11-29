@@ -1,14 +1,32 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, path::PathBuf};
 
 use anyhow::{Context, Result};
 
+/// This represents a single http request.
+///
+/// TODO: Put all this network related stuff in the `networks` crate.
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct HTTPRequest {
+    pub name: String,
+    pub url: String,
+    pub body: String,
+    pub method: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct LocalRequests {
+    pub requests: Vec<HTTPRequest>,
+}
+
 /// This struct represents all configurations that Blink supports.
 ///
 /// NOTE: All config properties should probably be an `Option<>`.
-#[derive(Default, Deserialize, Debug)]
+#[derive(Default, Deserialize, Serialize, Debug)]
 pub struct BlinkConfig {
-    pub mock: Option<String>,
+    pub message: Option<String>,
+    #[serde(default)]
+    pub local_requests: LocalRequests,
 }
 
 impl BlinkConfig {

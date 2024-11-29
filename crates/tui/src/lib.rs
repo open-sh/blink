@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
+use config::HTTPRequest;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Style},
     widgets::{Block, Borders, List, ListItem, Paragraph},
     DefaultTerminal, Frame,
 };
@@ -10,11 +12,12 @@ pub mod events;
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
 pub struct BlinkRenderer {
     pub message: String,
+    pub requests: Vec<HTTPRequest>,
 }
 
 impl BlinkRenderer {
-    pub fn new(message: String) -> Self {
-        Self { message }
+    pub fn new(message: String, requests: Vec<HTTPRequest>) -> Self {
+        Self { message, requests }
     }
 
     /// Initializes the terminal using the default `init` function from `ratatui`, returns
@@ -71,8 +74,16 @@ impl BlinkRenderer {
         self.render_editor(f, editor_area);
     }
 
+    //
+    // Update `BlinkRenderer` state.
+    //
+
     pub fn update_message(&mut self, new_message: String) {
         self.message = new_message;
+    }
+
+    pub fn update_requests(&mut self, new_requests: Vec<HTTPRequest>) {
+        self.requests = new_requests;
     }
 
     //
@@ -87,20 +98,18 @@ impl BlinkRenderer {
     }
 
     pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {
-        let request_list: Vec<String> = vec![
-            "request 1".to_string(),
-            "request 2".to_string(),
-            "request 3".to_string(),
-            "request 4".to_string(),
-            "request 5".to_string(),
-        ];
-        let items: Vec<ListItem> = request_list
+        let items: Vec<ListItem> = self
+            .requests
             .iter()
-            .map(|request| ListItem::new(request.clone()))
+            .map(|request| ListItem::new(request.name.clone()))
             .collect();
 
-        let requests =
-            List::new(items).block(Block::default().borders(Borders::ALL).title("Requests"));
+        let block = Block::default().borders(Borders::ALL).title("Requests");
+
+        let requests = List::new(items)
+            .block(block)
+            .highlight_style(Style::default().bg(Color::Blue))
+            .highlight_symbol("> ");
 
         f.render_widget(requests, area);
     }

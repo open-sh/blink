@@ -3,4 +3,11 @@
 # of the `BlinkConfig` struct.
 #
 # This is hot-reloadable.
-mock = "hi from the config"
+message = "hi from the config"
+
+[local_requests]
+requests = [
+    { name = "Get Users", url = "http://example.com/api/users", body = "", method = "GET" },
+    { name = "Create User", url = "http://example.com/api/users", body = "{ \"name\": \"John Doe\" }", method = "POST" },
+    { name = "Delete User", url = "http://example.com/api/users/1", body = "", method = "DELETE" },
+]
