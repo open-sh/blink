@@ -6,7 +6,8 @@ use std::{
     sync::mpsc::{channel, Receiver},
 };
 use tui::{
-    events::{handle_event, poll_events, BlinkCommand},
+    events::{event::KeyModifiers, handle_event, poll_events, BlinkCommand, KeyCode},
+    keys::{KeyCombination, KeybindingMap},
     BlinkRenderer, FocusArea,
 };
 use utils::{error, info};
@@ -18,6 +19,7 @@ pub struct BlinkState {
     // Receiver to receive watcher events of configuration
     config_watcher_rx: Receiver<NotifyResult<NotifyEvent>>,
     should_quit: bool,
+    key_bindings: KeybindingMap,
 }
 
 impl BlinkState {
@@ -64,11 +66,25 @@ impl BlinkState {
             loop {}
         });
 
+        // Example keybindings
+        let mut key_bindings = KeybindingMap::new();
+
+        key_bindings.add_binding(
+            KeyCombination::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
+            BlinkCommand::MoveCursorLeft,
+        );
+
+        key_bindings.add_binding(
+            KeyCombination::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
+            BlinkCommand::MoveCursorRight,
+        );
+
         Ok(Self {
             renderer: BlinkRenderer::new(message, requests),
             config,
             config_watcher_rx,
             should_quit: false,
+            key_bindings
         })
     }
 
@@ -98,7 +114,7 @@ impl BlinkState {
     fn handle_events(&mut self) -> Result<()> {
         let events = poll_events().context("ERROR: polling events.")?;
         for event in events {
-            let commands = handle_event(event, self.renderer.focus_area);
+            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings);
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,

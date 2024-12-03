@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
+pub use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
 
-use crate::FocusArea;
+use crate::{keys::{KeyCombination, KeybindingMap}, FocusArea};
 
 /// Event is any type of terminal event that Blink can compute.
 pub enum Event {
@@ -13,6 +13,7 @@ pub enum Event {
 }
 
 /// Any sort of high-level command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlinkCommand {
     Quit,
     ToggleFocus, // REFACTOR: Directional focus?
@@ -45,47 +46,61 @@ pub fn poll_events() -> Result<Vec<Event>> {
 /// Maps `CrosstermEvent` to a Vec<BlinkCommand>.
 ///
 /// TODO: Add Mode into the parameters of this function.
-/// TODO: Add FocusArea so that we can have specific keybindings dependeing upon
-/// where the user is currently focused.
-pub fn handle_event(event: Event, focus_area: FocusArea) -> Vec<BlinkCommand> {
+pub fn handle_event(event: Event, focus_area: FocusArea, bindings: &KeybindingMap) -> Vec<BlinkCommand> {
     let mut commands = Vec::new();
 
     match event {
-        Event::KeyPress(key_event) => match key_event.code {
-            // TODO: Send `key_event` into `handle_key_event()` so that I can match the mode.
-            KeyCode::Char('q') => commands.push(BlinkCommand::Quit),
-            KeyCode::Tab => commands.push(BlinkCommand::ToggleFocus),
-            KeyCode::Up | KeyCode::Char('k') => {
-                if focus_area == FocusArea::SidePanel {
-                    commands.push(BlinkCommand::MoveCursorUp)
+        Event::KeyPress(key_event) => {
+            let key_comb = KeyCombination::new(key_event.code, key_event.modifiers);
+
+            if let Some(command) = bindings.get_command(key_comb) {
+                // Clonning the command here to avoid borrow issues. Should not have any
+                // performance overheads.
+                commands.push(*command);
+
+                // If it's a char insertion command, we need to pass the char.
+                if let BlinkCommand::InsertChar(c) = command {
+                    commands.push(BlinkCommand::InsertChar(*c));
+                }
+            } else {
+                match key_event.code {
+                    // This is some sort of "default" keybindings or even a fallback.
+                    // TODO: Send `key_event` into `handle_key_event()` so that I can match the mode.
+                    KeyCode::Char('q') => commands.push(BlinkCommand::Quit),
+                    KeyCode::Tab => commands.push(BlinkCommand::ToggleFocus),
+                    KeyCode::Up | KeyCode::Char('k') => {
+                        if focus_area == FocusArea::SidePanel {
+                            commands.push(BlinkCommand::MoveCursorUp)
+                        }
+                    }
+                    KeyCode::Down | KeyCode::Char('j') => {
+                        if focus_area == FocusArea::SidePanel {
+                            commands.push(BlinkCommand::MoveCursorDown)
+                        }
+                    }
+                    KeyCode::Left => {
+                        if focus_area == FocusArea::URLInput {
+                            commands.push(BlinkCommand::MoveCursorLeft)
+                        }
+                    }
+                    KeyCode::Right => {
+                        if focus_area == FocusArea::URLInput {
+                            commands.push(BlinkCommand::MoveCursorRight)
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        if focus_area == FocusArea::URLInput {
+                            commands.push(BlinkCommand::DeleteBackward)
+                        }
+                    }
+                    KeyCode::Char(c) => {
+                        if focus_area == FocusArea::URLInput {
+                            commands.push(BlinkCommand::InsertChar(c))
+                        }
+                    }
+                    _ => {}
                 }
             }
-            KeyCode::Down | KeyCode::Char('j') => {
-                if focus_area == FocusArea::SidePanel {
-                    commands.push(BlinkCommand::MoveCursorDown)
-                }
-            }
-            KeyCode::Left => {
-                if focus_area == FocusArea::URLInput {
-                    commands.push(BlinkCommand::MoveCursorLeft)
-                }
-            }
-            KeyCode::Right => {
-                if focus_area == FocusArea::URLInput {
-                    commands.push(BlinkCommand::MoveCursorRight)
-                }
-            }
-            KeyCode::Backspace => {
-                if focus_area == FocusArea::URLInput {
-                    commands.push(BlinkCommand::DeleteBackward)
-                }
-            }
-            KeyCode::Char(c) => {
-                if focus_area == FocusArea::URLInput {
-                    commands.push(BlinkCommand::InsertChar(c))
-                }
-            }
-            _ => {}
         },
         Event::_Mock => {}
     }

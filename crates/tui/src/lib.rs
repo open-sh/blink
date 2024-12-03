@@ -10,6 +10,7 @@ use url_input::URLInput;
 
 pub mod events;
 mod url_input;
+pub mod keys;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
 pub struct BlinkRenderer {
