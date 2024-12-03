@@ -18,6 +18,10 @@ pub enum BlinkCommand {
     ToggleFocus, // REFACTOR: Directional focus?
     MoveCursorUp,
     MoveCursorDown,
+    MoveCursorLeft,
+    MoveCursorRight,
+    InsertChar(char),
+    DeleteBackward,
 }
 
 /// Capture events from the terminal and return them into a Vector.
@@ -59,6 +63,26 @@ pub fn handle_event(event: Event, focus_area: FocusArea) -> Vec<BlinkCommand> {
             KeyCode::Down | KeyCode::Char('j') => {
                 if focus_area == FocusArea::SidePanel {
                     commands.push(BlinkCommand::MoveCursorDown)
+                }
+            }
+            KeyCode::Left => {
+                if focus_area == FocusArea::URLInput {
+                    commands.push(BlinkCommand::MoveCursorLeft)
+                }
+            }
+            KeyCode::Right => {
+                if focus_area == FocusArea::URLInput {
+                    commands.push(BlinkCommand::MoveCursorRight)
+                }
+            }
+            KeyCode::Backspace => {
+                if focus_area == FocusArea::URLInput {
+                    commands.push(BlinkCommand::DeleteBackward)
+                }
+            }
+            KeyCode::Char(c) => {
+                if focus_area == FocusArea::URLInput {
+                    commands.push(BlinkCommand::InsertChar(c))
                 }
             }
             _ => {}

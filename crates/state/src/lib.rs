@@ -105,6 +105,10 @@ impl BlinkState {
                     BlinkCommand::ToggleFocus => self.toggle_focus(),
                     BlinkCommand::MoveCursorUp => self.move_cursor_up(),
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
+                    BlinkCommand::InsertChar(c) => self.insert_char(c),
+                    BlinkCommand::DeleteBackward => self.backspace(),
+                    BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
+                    BlinkCommand::MoveCursorRight => self.move_cursor_right(),
                 }
             }
         }
@@ -183,18 +187,56 @@ impl BlinkState {
     //
 
     fn move_cursor_up(&mut self) {
-        if self.renderer.focus_area == FocusArea::SidePanel {
-            if self.renderer.selected_request > 0 {
-                self.renderer.selected_request -= 1;
+        match self.renderer.focus_area {
+            FocusArea::SidePanel => {
+                if self.renderer.selected_request > 0 {
+                    self.renderer.selected_request -= 1;
+                }
             }
+            _ => {}
         }
     }
 
     fn move_cursor_down(&mut self) {
-        if self.renderer.focus_area == FocusArea::SidePanel {
-            if self.renderer.selected_request + 1 < self.renderer.requests.len() {
-                self.renderer.selected_request += 1;
+        match self.renderer.focus_area {
+            FocusArea::SidePanel => {
+                if self.renderer.selected_request + 1 < self.renderer.requests.len() {
+                    self.renderer.selected_request += 1;
+                }
             }
+            _ => {}
+        }
+    }
+
+    fn move_cursor_left(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_left(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right(),
+            _ => {}
+        }
+    }
+
+    //
+    // Editing.
+    //
+
+    fn insert_char(&mut self, c: char) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.insert_char(c),
+            _ => {}
+        }
+    }
+
+    fn backspace(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.backspace(),
+            _ => {}
         }
     }
 }

@@ -1,13 +1,15 @@
 use anyhow::{Context, Result};
 use config::HTTPRequest;
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Position, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal, Frame,
 };
+use url_input::URLInput;
 
 pub mod events;
+mod url_input;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
 pub struct BlinkRenderer {
@@ -15,6 +17,7 @@ pub struct BlinkRenderer {
     pub requests: Vec<HTTPRequest>,
     pub focus_area: FocusArea,
     pub selected_request: usize,
+    pub url_input: URLInput,
 }
 
 /// Determines the direction in which the cursor focus takes place.
@@ -30,8 +33,9 @@ impl BlinkRenderer {
         Self {
             message,
             requests,
-            focus_area: FocusArea::URLInput,
+            focus_area: FocusArea::SidePanel,
             selected_request: 0,
+            url_input: URLInput::new(),
         }
     }
 
@@ -115,8 +119,19 @@ impl BlinkRenderer {
             Block::default().borders(Borders::ALL).title("URL")
         };
 
-        let url_input = Paragraph::new("we gucci").block(block);
+        let url_input = Paragraph::new(self.url_input.input.clone())
+            .block(block)
+            .style(Style::default().fg(Color::White));
+
         f.render_widget(url_input, area);
+
+        if self.focus_area == FocusArea::URLInput {
+            // Cursor position.
+            let x = area.x + self.url_input.cursor_position as u16 + 1; // +1 for left border.
+            let y = area.y + 1; // Inside block.
+
+            f.set_cursor_position(Position::new(x, y));
+        }
     }
 
     pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {
@@ -144,8 +159,7 @@ impl BlinkRenderer {
 
         let requests = List::new(items)
             .block(block)
-            .highlight_style(Style::default().bg(Color::Blue))
-            .highlight_symbol("> ");
+            .highlight_style(Style::default().bg(Color::Blue));
 
         f.render_stateful_widget(requests, area, &mut state);
     }
