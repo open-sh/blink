@@ -40,7 +40,10 @@ impl BlinkState {
         let config_path = Path::new(".");
 
         std::thread::spawn(move || {
-            assert!(config_path.is_dir(), "The current path '.' is not a valid directory");
+            assert!(
+                config_path.is_dir(),
+                "The current path '.' is not a valid directory"
+            );
 
             let mut watcher: RecommendedWatcher =
                 match Watcher::new(watcher_tx, notify::Config::default()) {
@@ -70,7 +73,10 @@ impl BlinkState {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        assert!(!self.should_quit, "The `should_quit` property should start as `false`");
+        assert!(
+            !self.should_quit,
+            "The `should_quit` property should start as `false`"
+        );
         let mut terminal = self.renderer.init();
 
         loop {
@@ -92,11 +98,13 @@ impl BlinkState {
     fn handle_events(&mut self) -> Result<()> {
         let events = poll_events().context("ERROR: polling events.")?;
         for event in events {
-            let commands = handle_event(event);
+            let commands = handle_event(event, self.renderer.focus_area);
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
                     BlinkCommand::ToggleFocus => self.toggle_focus(),
+                    BlinkCommand::MoveCursorUp => self.move_cursor_up(),
+                    BlinkCommand::MoveCursorDown => self.move_cursor_down(),
                 }
             }
         }
@@ -167,6 +175,26 @@ impl BlinkState {
             FocusArea::SidePanel => FocusArea::URLInput,
             FocusArea::URLInput => FocusArea::Editor,
             FocusArea::Editor => FocusArea::SidePanel,
+        }
+    }
+
+    //
+    // Movement.
+    //
+
+    fn move_cursor_up(&mut self) {
+        if self.renderer.focus_area == FocusArea::SidePanel {
+            if self.renderer.selected_request > 0 {
+                self.renderer.selected_request -= 1;
+            }
+        }
+    }
+
+    fn move_cursor_down(&mut self) {
+        if self.renderer.focus_area == FocusArea::SidePanel {
+            if self.renderer.selected_request + 1 < self.renderer.requests.len() {
+                self.renderer.selected_request += 1;
+            }
         }
     }
 }

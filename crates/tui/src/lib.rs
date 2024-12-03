@@ -14,10 +14,11 @@ pub struct BlinkRenderer {
     pub message: String,
     pub requests: Vec<HTTPRequest>,
     pub focus_area: FocusArea,
+    pub selected_request: usize,
 }
 
 /// Determines the direction in which the cursor focus takes place.
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum FocusArea {
     SidePanel,
     URLInput,
@@ -30,6 +31,7 @@ impl BlinkRenderer {
             message,
             requests,
             focus_area: FocusArea::URLInput,
+            selected_request: 0,
         }
     }
 
@@ -137,7 +139,7 @@ impl BlinkRenderer {
 
         let mut state = ListState::default();
         if !self.requests.is_empty() {
-            state.select(Some(0)); // Initial request selection.
+            state.select(Some(self.selected_request));
         }
 
         let requests = List::new(items)
