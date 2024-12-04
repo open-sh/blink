@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use config::HTTPRequest;
+use editor::Editor;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Position, Rect},
     style::{Color, Style},
@@ -11,14 +12,15 @@ use url_input::URLInput;
 pub mod events;
 mod url_input;
 pub mod keys;
+mod editor;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
 pub struct BlinkRenderer {
-    pub message: String,
     pub requests: Vec<HTTPRequest>,
     pub focus_area: FocusArea,
     pub selected_request: usize,
     pub url_input: URLInput,
+    pub editor: Editor,
 }
 
 /// Determines the direction in which the cursor focus takes place.
@@ -30,13 +32,13 @@ pub enum FocusArea {
 }
 
 impl BlinkRenderer {
-    pub fn new(message: String, requests: Vec<HTTPRequest>) -> Self {
+    pub fn new(requests: Vec<HTTPRequest>) -> Self {
         Self {
-            message,
             requests,
             focus_area: FocusArea::SidePanel,
             selected_request: 0,
             url_input: URLInput::new(),
+            editor: Editor::new(),
         }
     }
 
@@ -97,10 +99,6 @@ impl BlinkRenderer {
     //
     // Update `BlinkRenderer` state.
     //
-
-    pub fn update_message(&mut self, new_message: String) {
-        self.message = new_message;
-    }
 
     pub fn update_requests(&mut self, new_requests: Vec<HTTPRequest>) {
         self.requests = new_requests;
@@ -167,17 +165,32 @@ impl BlinkRenderer {
 
     pub fn render_editor(&mut self, f: &mut Frame, area: Rect) {
         let block = if self.focus_area == FocusArea::Editor {
+            let title = match self.editor.mode {
+                editor::EditorMode::Insert => "Request body [Insert]",
+                editor::EditorMode::Normal => "Request body [Normal]",
+            };
+
             Block::default()
                 .borders(Borders::ALL)
-                .title("Request body")
+                .title(title)
                 .border_style(Style::default().fg(Color::Yellow)) // Yellow style when focused.
         } else {
             Block::default().borders(Borders::ALL).title("Request body")
         };
 
-        let request_body: String = String::from(self.message.clone());
-        let editor = Paragraph::new(request_body).block(block);
+        let text: String = self.editor.content.to_string();
+        let paragraph = Paragraph::new(text).block(block);
 
-        f.render_widget(editor, area);
+        f.render_widget(paragraph, area);
+
+        if self.focus_area == FocusArea::Editor {
+            let x_offset = self.editor.cursor_x as u16;
+            let y_offset = self.editor.cursor_y as u16;
+
+            let x = area.x + x_offset + 1; // +1 for left border.
+            let y = area.y + y_offset + 1; // +1 for right border.
+
+            f.set_cursor_position(Position::new(x, y));
+        }
     }
 }

@@ -4,7 +4,11 @@ use anyhow::Result;
 use crossterm::event::KeyModifiers;
 pub use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
 
-use crate::{keys::{KeyCombination, KeybindingMap}, FocusArea};
+use crate::{
+    editor::EditorMode,
+    keys::{KeyCombination, KeybindingMap},
+    FocusArea,
+};
 
 /// Event is any type of terminal event that Blink can compute.
 pub enum Event {
@@ -24,6 +28,9 @@ pub enum BlinkCommand {
     MoveCursorRight,
     InsertChar(char),
     DeleteBackward,
+    DeleteForward,
+    EnterInsertMode,
+    EnterNormalMode,
 }
 
 /// Capture events from the terminal and return them into a Vector.
@@ -45,29 +52,49 @@ pub fn poll_events() -> Result<Vec<Event>> {
 }
 
 /// Maps `CrosstermEvent` to a Vec<BlinkCommand>.
-///
-/// TODO: Add Mode into the parameters of this function.
-pub fn handle_event(event: Event, focus_area: FocusArea, bindings: &KeybindingMap) -> Vec<BlinkCommand> {
+pub fn handle_event(
+    event: Event,
+    focus_area: FocusArea,
+    bindings: &KeybindingMap,
+    editor_mode: &EditorMode,
+) -> Vec<BlinkCommand> {
     let mut commands = Vec::new();
 
     match event {
         Event::KeyPress(key_event) => {
             let key_comb = KeyCombination::new(key_event.code, key_event.modifiers);
 
-            if let Some(command) = bindings.get_command(key_comb) {
-                commands.push(*command);
-            } else {
-                // Default behavior: Insert a char if the focus is URLInput without modifiers.
-                if focus_area == FocusArea::URLInput {
-                    match key_event.code {
-                        KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
-                            commands.push(BlinkCommand::InsertChar(c));
+            if focus_area == FocusArea::Editor {
+                match editor_mode {
+                    EditorMode::Normal => {
+                        // Handle normal mode keybindings.
+                        if let Some(command) = bindings.get_command(key_comb) {
+                            commands.push(*command);
                         }
+                    }
+                    EditorMode::Insert => match key_event.code {
+                        KeyCode::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
+                        KeyCode::Esc => commands.push(BlinkCommand::EnterNormalMode),
+                        KeyCode::Backspace => commands.push(BlinkCommand::DeleteBackward),
                         _ => {}
+                    },
+                }
+            } else {
+                if let Some(command) = bindings.get_command(key_comb) {
+                    commands.push(*command);
+                } else {
+                    // Default behavior: Insert a char if the focus is URLInput without modifiers.
+                    if focus_area == FocusArea::URLInput {
+                        match key_event.code {
+                            KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
+                                commands.push(BlinkCommand::InsertChar(c));
+                            }
+                            _ => {}
+                        }
                     }
                 }
             }
-        },
+        }
         Event::_Mock => {}
     }
 

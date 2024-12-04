@@ -28,11 +28,6 @@ impl BlinkState {
     /// from the `BlinkConfig` (global and/or local) into the `BlinkState`.
     pub fn new(config: BlinkConfig) -> Result<Self> {
         // Renderer variables.
-        let message = config
-            .message
-            .clone()
-            .unwrap_or_else(|| "Hello not from the config".to_string());
-
         let requests = config.local_requests.requests.clone();
 
         let (config_watcher_tx, config_watcher_rx) = channel();
@@ -77,7 +72,7 @@ impl BlinkState {
         }
 
         Ok(Self {
-            renderer: BlinkRenderer::new(message, requests),
+            renderer: BlinkRenderer::new(requests),
             config,
             config_watcher_rx,
             should_quit: false,
@@ -111,7 +106,7 @@ impl BlinkState {
     fn handle_events(&mut self) -> Result<()> {
         let events = poll_events().context("ERROR: polling events.")?;
         for event in events {
-            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings);
+            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings, &self.renderer.editor.mode);
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
@@ -122,6 +117,9 @@ impl BlinkState {
                     BlinkCommand::DeleteBackward => self.backspace(),
                     BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
                     BlinkCommand::MoveCursorRight => self.move_cursor_right(),
+                    BlinkCommand::DeleteForward => self.renderer.editor.delete_char(),
+                    BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
+                    BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
                 }
             }
         }
@@ -172,13 +170,6 @@ impl BlinkState {
         info!("Reloading config...");
         self.config = BlinkConfig::load().context("ERROR: Loading configuration during reload")?;
 
-        let new_message = self
-            .config
-            .message
-            .clone()
-            .unwrap_or_else(|| "Hello not from the config".to_string());
-        self.renderer.update_message(new_message);
-
         // Update requests.
         let new_requests = self.config.local_requests.requests.clone();
         self.renderer.update_requests(new_requests);
@@ -215,6 +206,7 @@ impl BlinkState {
                     self.renderer.selected_request -= 1;
                 }
             }
+            FocusArea::Editor => self.renderer.editor.move_cursor_up(),
             _ => {}
         }
     }
@@ -226,6 +218,7 @@ impl BlinkState {
                     self.renderer.selected_request += 1;
                 }
             }
+            FocusArea::Editor => self.renderer.editor.move_cursor_down(),
             _ => {}
         }
     }
@@ -233,6 +226,7 @@ impl BlinkState {
     fn move_cursor_left(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_left(),
             _ => {}
         }
     }
@@ -240,6 +234,7 @@ impl BlinkState {
     fn move_cursor_right(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right(),
             _ => {}
         }
     }
@@ -251,6 +246,7 @@ impl BlinkState {
     fn insert_char(&mut self, c: char) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.insert_char(c),
+            FocusArea::Editor => self.renderer.editor.insert_char(c),
             _ => {}
         }
     }
@@ -258,7 +254,24 @@ impl BlinkState {
     fn backspace(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.backspace(),
+            FocusArea::Editor => self.renderer.editor.backspace(),
             _ => {}
+        }
+    }
+
+    //
+    // State handling.
+    //
+
+    fn enter_insert_mode(&mut self) {
+        if self.renderer.focus_area == FocusArea::Editor {
+            self.renderer.editor.enter_insert_mode();
+        }
+    }
+
+    fn enter_normal_mode(&mut self) {
+        if self.renderer.focus_area == FocusArea::Editor {
+            self.renderer.editor.enter_normal_mode();
         }
     }
 }

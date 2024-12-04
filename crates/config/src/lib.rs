@@ -29,7 +29,6 @@ pub struct KeybindingConfig {
 /// This struct represents all configurations that Blink supports.
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct BlinkConfig {
-    pub message: Option<String>,
     #[serde(default)]
     pub local_requests: LocalRequests,
     #[serde(default)]

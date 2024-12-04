@@ -8,3 +8,4 @@ ratatui = "0.29.0"
 crossterm = "0.28.1"
 anyhow = { workspace = true }
 config = { path = "../config" }
+ropey = "1.6.1"

@@ -104,6 +104,37 @@ impl KeybindingMap {
             BlinkCommand::DeleteBackward,
         );
 
+        // Normal mode keybindings
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('i'), KeyModifiers::NONE),
+            BlinkCommand::EnterInsertMode,
+        );
+
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            BlinkCommand::MoveCursorLeft,
+        );
+
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('j'), KeyModifiers::NONE),
+            BlinkCommand::MoveCursorDown,
+        );
+
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('k'), KeyModifiers::NONE),
+            BlinkCommand::MoveCursorUp,
+        );
+
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('l'), KeyModifiers::NONE),
+            BlinkCommand::MoveCursorRight,
+        );
+
+        map.add_binding(
+            KeyCombination::new(KeyCode::Char('x'), KeyModifiers::NONE),
+            BlinkCommand::DeleteForward,
+        );
+
         return map;
     }
 
