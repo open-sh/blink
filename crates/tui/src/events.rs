@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use crossterm::event::KeyModifiers;
 pub use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
 
 use crate::{keys::{KeyCombination, KeybindingMap}, FocusArea};
@@ -54,51 +55,16 @@ pub fn handle_event(event: Event, focus_area: FocusArea, bindings: &KeybindingMa
             let key_comb = KeyCombination::new(key_event.code, key_event.modifiers);
 
             if let Some(command) = bindings.get_command(key_comb) {
-                // Clonning the command here to avoid borrow issues. Should not have any
-                // performance overheads.
                 commands.push(*command);
-
-                // If it's a char insertion command, we need to pass the char.
-                if let BlinkCommand::InsertChar(c) = command {
-                    commands.push(BlinkCommand::InsertChar(*c));
-                }
             } else {
-                match key_event.code {
-                    // This is some sort of "default" keybindings or even a fallback.
-                    // TODO: Send `key_event` into `handle_key_event()` so that I can match the mode.
-                    KeyCode::Char('q') => commands.push(BlinkCommand::Quit),
-                    KeyCode::Tab => commands.push(BlinkCommand::ToggleFocus),
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        if focus_area == FocusArea::SidePanel {
-                            commands.push(BlinkCommand::MoveCursorUp)
+                // Default behavior: Insert a char if the focus is URLInput without modifiers.
+                if focus_area == FocusArea::URLInput {
+                    match key_event.code {
+                        KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
+                            commands.push(BlinkCommand::InsertChar(c));
                         }
+                        _ => {}
                     }
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        if focus_area == FocusArea::SidePanel {
-                            commands.push(BlinkCommand::MoveCursorDown)
-                        }
-                    }
-                    KeyCode::Left => {
-                        if focus_area == FocusArea::URLInput {
-                            commands.push(BlinkCommand::MoveCursorLeft)
-                        }
-                    }
-                    KeyCode::Right => {
-                        if focus_area == FocusArea::URLInput {
-                            commands.push(BlinkCommand::MoveCursorRight)
-                        }
-                    }
-                    KeyCode::Backspace => {
-                        if focus_area == FocusArea::URLInput {
-                            commands.push(BlinkCommand::DeleteBackward)
-                        }
-                    }
-                    KeyCode::Char(c) => {
-                        if focus_area == FocusArea::URLInput {
-                            commands.push(BlinkCommand::InsertChar(c))
-                        }
-                    }
-                    _ => {}
                 }
             }
         },

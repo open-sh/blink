@@ -6,8 +6,8 @@ use std::{
     sync::mpsc::{channel, Receiver},
 };
 use tui::{
-    events::{event::KeyModifiers, handle_event, poll_events, BlinkCommand, KeyCode},
-    keys::{KeyCombination, KeybindingMap},
+    events::{handle_event, poll_events, BlinkCommand},
+    keys::KeybindingMap,
     BlinkRenderer, FocusArea,
 };
 use utils::{error, info};
@@ -66,25 +66,22 @@ impl BlinkState {
             loop {}
         });
 
-        // Example keybindings
-        let mut key_bindings = KeybindingMap::new();
+        // Initialize with default bindings.
+        let mut key_bindings = KeybindingMap::default_keybindings();
 
-        key_bindings.add_binding(
-            KeyCombination::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
-            BlinkCommand::MoveCursorLeft,
-        );
-
-        key_bindings.add_binding(
-            KeyCombination::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
-            BlinkCommand::MoveCursorRight,
-        );
+        // Add keybindings from the config if there are any.
+        if !config.keybindings.is_empty() {
+            key_bindings
+                .add_bindings_from_config(&config.keybindings)
+                .context("ERROR: Adding keybindings from config")?;
+        }
 
         Ok(Self {
             renderer: BlinkRenderer::new(message, requests),
             config,
             config_watcher_rx,
             should_quit: false,
-            key_bindings
+            key_bindings,
         })
     }
 

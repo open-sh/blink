@@ -11,3 +11,23 @@ requests = [
     { name = "Create User", url = "http://example.com/api/users", body = "{ \"name\": \"John Doe\" }", method = "POST" },
     { name = "Delete User", url = "http://example.com/api/users/1", body = "", method = "DELETE" },
 ]
+
+[[keybindings]]
+key = "b"
+modifiers = ["Control"]
+command = "MoveCursorLeft"
+
+[[keybindings]]
+key = "a"
+modifiers = ["Control"]
+command = "MoveCursorRight"
+
+[[keybindings]]
+key = "c"
+modifiers = ["Control"]
+command = "Quit"
+
+[[keybindings]]
+key = "l"
+modifiers = ["Shift"]
+command = "Quit"

@@ -19,14 +19,21 @@ pub struct LocalRequests {
     pub requests: Vec<HTTPRequest>,
 }
 
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct KeybindingConfig {
+    pub key: String,            // Example: "b".
+    pub modifiers: Vec<String>, // Example: ["Control"].
+    pub command: String,        // Example: "MoveCursorLeft".
+}
+
 /// This struct represents all configurations that Blink supports.
-///
-/// NOTE: All config properties should probably be an `Option<>`.
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct BlinkConfig {
     pub message: Option<String>,
     #[serde(default)]
     pub local_requests: LocalRequests,
+    #[serde(default)]
+    pub keybindings: Vec<KeybindingConfig>,
 }
 
 impl BlinkConfig {
