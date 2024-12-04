@@ -7,20 +7,23 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal, Frame,
 };
+use side_panel::SidePanel;
 use url_input::URLInput;
+use utils::VimMode;
 
-pub mod events;
-mod url_input;
-pub mod keys;
 mod editor;
+pub mod events;
+pub mod keys;
+mod side_panel;
+mod url_input;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
 pub struct BlinkRenderer {
-    pub requests: Vec<HTTPRequest>,
     pub focus_area: FocusArea,
-    pub selected_request: usize,
     pub url_input: URLInput,
     pub editor: Editor,
+    pub side_panel: SidePanel,
+    pub vim_mode: bool,
 }
 
 /// Determines the direction in which the cursor focus takes place.
@@ -32,13 +35,13 @@ pub enum FocusArea {
 }
 
 impl BlinkRenderer {
-    pub fn new(requests: Vec<HTTPRequest>) -> Self {
+    pub fn new(requests: Vec<HTTPRequest>, vim_mode: bool) -> Self {
         Self {
-            requests,
             focus_area: FocusArea::SidePanel,
-            selected_request: 0,
-            url_input: URLInput::new(),
-            editor: Editor::new(),
+            url_input: URLInput::new(vim_mode),
+            editor: Editor::new(vim_mode),
+            vim_mode,
+            side_panel: SidePanel::new(requests, vim_mode),
         }
     }
 
@@ -101,7 +104,12 @@ impl BlinkRenderer {
     //
 
     pub fn update_requests(&mut self, new_requests: Vec<HTTPRequest>) {
-        self.requests = new_requests;
+        self.side_panel.requests = new_requests;
+    }
+
+    pub fn update_vim_mode(&mut self, vim_mode: bool) {
+        self.url_input.vim_mode = vim_mode;
+        self.editor.vim_mode = vim_mode;
     }
 
     //
@@ -110,9 +118,15 @@ impl BlinkRenderer {
 
     pub fn render_url_input(&mut self, f: &mut Frame, area: Rect) {
         let block = if self.focus_area == FocusArea::URLInput {
+            let title = match self.url_input.mode {
+                VimMode::Insert => "URL [Insert]",
+                VimMode::Normal => "URL [Normal]",
+                VimMode::Any => "URL",
+            };
+
             Block::default()
                 .borders(Borders::ALL)
-                .title("URL")
+                .title(title)
                 .border_style(Style::default().fg(Color::Yellow))
         } else {
             Block::default().borders(Borders::ALL).title("URL")
@@ -135,6 +149,7 @@ impl BlinkRenderer {
 
     pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {
         let items: Vec<ListItem> = self
+            .side_panel
             .requests
             .iter()
             .map(|request| ListItem::new(request.name.clone()))
@@ -152,8 +167,8 @@ impl BlinkRenderer {
         };
 
         let mut state = ListState::default();
-        if !self.requests.is_empty() {
-            state.select(Some(self.selected_request));
+        if !self.side_panel.requests.is_empty() {
+            state.select(Some(self.side_panel.selected_request));
         }
 
         let requests = List::new(items)
@@ -166,8 +181,9 @@ impl BlinkRenderer {
     pub fn render_editor(&mut self, f: &mut Frame, area: Rect) {
         let block = if self.focus_area == FocusArea::Editor {
             let title = match self.editor.mode {
-                editor::EditorMode::Insert => "Request body [Insert]",
-                editor::EditorMode::Normal => "Request body [Normal]",
+                VimMode::Insert => "Request body [Insert]",
+                VimMode::Normal => "Request body [Normal]",
+                VimMode::Any => "Request body",
             };
 
             Block::default()

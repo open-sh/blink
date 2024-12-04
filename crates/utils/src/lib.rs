@@ -23,3 +23,10 @@ pub fn init_logging() -> Result<()> {
 //
 // USAGE: info!("debug ma man");
 pub use log::{debug, error, info, warn};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VimMode {
+    Normal,
+    Insert,
+    Any // This represents that vim_mode is not currently active. It kinda works like Any to be honest.
+}

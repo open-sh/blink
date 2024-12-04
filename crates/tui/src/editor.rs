@@ -1,34 +1,37 @@
 use ropey::Rope;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EditorMode {
-    Normal,
-    Insert,
-}
+use utils::VimMode;
 
 pub struct Editor {
     pub content: Rope,
     pub cursor_x: usize,
     pub cursor_y: usize,
-    pub mode: EditorMode,
+    pub mode: VimMode,
+    pub vim_mode: bool,
 }
 
 impl Editor {
-    pub fn new() -> Self {
+    pub fn new(vim_mode: bool) -> Self {
+        let mode = if vim_mode { VimMode::Normal } else { VimMode::Any };
+
         Self {
             content: Rope::new(),
             cursor_x: 0,
             cursor_y: 0,
-            mode: EditorMode::Normal,
+            mode,
+            vim_mode,
         }
     }
 
     pub fn enter_insert_mode(&mut self) {
-        self.mode = EditorMode::Insert
+        if self.vim_mode {
+            self.mode = VimMode::Insert
+        }
     }
 
     pub fn enter_normal_mode(&mut self) {
-        self.mode = EditorMode::Normal
+        if self.vim_mode {
+            self.mode = VimMode::Normal
+        }
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -57,7 +60,7 @@ impl Editor {
     }
 
     pub fn backspace(&mut self) {
-        if self.mode == EditorMode::Insert {
+        if self.mode == VimMode::Insert {
             if self.cursor_y < self.content.len_lines() {
                 if self.cursor_x > 0 {
                     // Remove char previous to cursor.
@@ -66,7 +69,7 @@ impl Editor {
                     self.content.remove(char_offset..char_offset + 1);
                     self.cursor_x -= 1;
                 } else if self.cursor_y > 0 {
-                    // If Se cursor_x == 0, we need to join lines with the previous,
+                    // If cursor_x == 0, we need to join lines with the previous,
                     // if it is the desired behavior. We'll leave like this for simplicity.
                     self.cursor_y -= 1;
                     let line_len = self.content.line(self.cursor_y).len_chars();

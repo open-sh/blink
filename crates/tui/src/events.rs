@@ -1,11 +1,10 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::KeyModifiers;
 pub use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
+use utils::VimMode;
 
 use crate::{
-    editor::EditorMode,
     keys::{KeyCombination, KeybindingMap},
     FocusArea,
 };
@@ -56,7 +55,7 @@ pub fn handle_event(
     event: Event,
     focus_area: FocusArea,
     bindings: &KeybindingMap,
-    editor_mode: &EditorMode,
+    editor_mode: &VimMode,
 ) -> Vec<BlinkCommand> {
     let mut commands = Vec::new();
 
@@ -64,34 +63,23 @@ pub fn handle_event(
         Event::KeyPress(key_event) => {
             let key_comb = KeyCombination::new(key_event.code, key_event.modifiers);
 
-            if focus_area == FocusArea::Editor {
-                match editor_mode {
-                    EditorMode::Normal => {
-                        // Handle normal mode keybindings.
-                        if let Some(command) = bindings.get_command(key_comb) {
-                            commands.push(*command);
-                        }
-                    }
-                    EditorMode::Insert => match key_event.code {
-                        KeyCode::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
-                        KeyCode::Esc => commands.push(BlinkCommand::EnterNormalMode),
-                        KeyCode::Backspace => commands.push(BlinkCommand::DeleteBackward),
-                        _ => {}
-                    },
-                }
-            } else {
-                if let Some(command) = bindings.get_command(key_comb) {
-                    commands.push(*command);
+            if focus_area == FocusArea::Editor || focus_area == FocusArea::URLInput || focus_area == FocusArea::SidePanel {
+                if let Some(command) = bindings.get_command(key_comb, *editor_mode) {
+                    // Found a command whose mode is matched with the current one.
+                    commands.push(command);
                 } else {
-                    // Default behavior: Insert a char if the focus is URLInput without modifiers.
-                    if focus_area == FocusArea::URLInput {
+                    if *editor_mode == VimMode::Insert || *editor_mode == VimMode::Any {
                         match key_event.code {
-                            KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
-                                commands.push(BlinkCommand::InsertChar(c));
-                            }
+                            KeyCode::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
+                            KeyCode::Esc => commands.push(BlinkCommand::EnterNormalMode),
+                            KeyCode::Backspace => commands.push(BlinkCommand::DeleteBackward),
                             _ => {}
                         }
                     }
+                }
+            } else {
+                if let Some(command) = bindings.get_command(key_comb, VimMode::Any) {
+                    commands.push(command);
                 }
             }
         }

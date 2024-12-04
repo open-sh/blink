@@ -24,6 +24,12 @@ pub struct KeybindingConfig {
     pub key: String,            // Example: "b".
     pub modifiers: Vec<String>, // Example: ["Control"].
     pub command: String,        // Example: "MoveCursorLeft".
+    #[serde(default = "default_mode")]
+    pub mode: String,
+}
+
+fn default_mode() -> String {
+    "any".to_string()
 }
 
 /// This struct represents all configurations that Blink supports.
@@ -33,6 +39,12 @@ pub struct BlinkConfig {
     pub local_requests: LocalRequests,
     #[serde(default)]
     pub keybindings: Vec<KeybindingConfig>,
+    #[serde(default = "default_true")]
+    pub vim_mode: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl BlinkConfig {

@@ -5,6 +5,9 @@
 # This is hot-reloadable.
 message = "hi from the config"
 
+# Vim mode is optional.
+vim_mode = true
+
 [local_requests]
 requests = [
     { name = "Get Users", url = "http://example.com/api/users", body = "", method = "GET" },
@@ -13,6 +16,8 @@ requests = [
 ]
 
 # Example of keybinding remapping.
+#
+# NOTE: If mode is not specified, it will assume it's "any"
 [[keybindings]]
 key = "b"
 modifiers = ["Control"]
@@ -27,3 +32,4 @@ command = "MoveCursorRight"
 key = "c"
 modifiers = ["Control"]
 command = "Quit"
+mode = "insert" # Could be "normal" or "any" as well.

@@ -29,6 +29,7 @@ impl BlinkState {
     pub fn new(config: BlinkConfig) -> Result<Self> {
         // Renderer variables.
         let requests = config.local_requests.requests.clone();
+        let vim_mode = config.vim_mode;
 
         let (config_watcher_tx, config_watcher_rx) = channel();
 
@@ -72,7 +73,7 @@ impl BlinkState {
         }
 
         Ok(Self {
-            renderer: BlinkRenderer::new(requests),
+            renderer: BlinkRenderer::new(requests, vim_mode),
             config,
             config_watcher_rx,
             should_quit: false,
@@ -106,7 +107,13 @@ impl BlinkState {
     fn handle_events(&mut self) -> Result<()> {
         let events = poll_events().context("ERROR: polling events.")?;
         for event in events {
-            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings, &self.renderer.editor.mode);
+            let event_mode = match self.renderer.focus_area {
+                FocusArea::Editor => self.renderer.editor.mode,
+                FocusArea::URLInput => self.renderer.url_input.mode,
+                FocusArea::SidePanel => self.renderer.side_panel.mode,
+            };
+
+            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings, &event_mode);
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
@@ -117,7 +124,7 @@ impl BlinkState {
                     BlinkCommand::DeleteBackward => self.backspace(),
                     BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
                     BlinkCommand::MoveCursorRight => self.move_cursor_right(),
-                    BlinkCommand::DeleteForward => self.renderer.editor.delete_char(),
+                    BlinkCommand::DeleteForward => self.delete_char(),
                     BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
                     BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
                 }
@@ -182,6 +189,10 @@ impl BlinkState {
                 .context("ERROR: Adding keybindings from reloaded config")?;
         }
 
+        // Update vim_mode.
+        let new_vim_mode = self.config.vim_mode.clone();
+        self.renderer.update_vim_mode(new_vim_mode);
+
         info!("Config reloaded.");
         Ok(())
     }
@@ -201,11 +212,7 @@ impl BlinkState {
 
     fn move_cursor_up(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::SidePanel => {
-                if self.renderer.selected_request > 0 {
-                    self.renderer.selected_request -= 1;
-                }
-            }
+            FocusArea::SidePanel => self.renderer.side_panel.move_cursor_up(),
             FocusArea::Editor => self.renderer.editor.move_cursor_up(),
             _ => {}
         }
@@ -213,11 +220,7 @@ impl BlinkState {
 
     fn move_cursor_down(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::SidePanel => {
-                if self.renderer.selected_request + 1 < self.renderer.requests.len() {
-                    self.renderer.selected_request += 1;
-                }
-            }
+            FocusArea::SidePanel => self.renderer.side_panel.move_cursor_down(),
             FocusArea::Editor => self.renderer.editor.move_cursor_down(),
             _ => {}
         }
@@ -259,19 +262,33 @@ impl BlinkState {
         }
     }
 
+    fn delete_char(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => {
+                // TODO: Gotta make delete_char for URLInput.
+            }
+            FocusArea::Editor => self.renderer.editor.delete_char(),
+            _ => {}
+        }
+    }
+
     //
     // State handling.
     //
 
     fn enter_insert_mode(&mut self) {
-        if self.renderer.focus_area == FocusArea::Editor {
-            self.renderer.editor.enter_insert_mode();
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.enter_insert_mode(),
+            FocusArea::Editor => self.renderer.editor.enter_insert_mode(),
+            _ => {}
         }
     }
 
     fn enter_normal_mode(&mut self) {
-        if self.renderer.focus_area == FocusArea::Editor {
-            self.renderer.editor.enter_normal_mode();
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.enter_normal_mode(),
+            FocusArea::Editor => self.renderer.editor.enter_normal_mode(),
+            _ => {}
         }
     }
 }

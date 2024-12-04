@@ -924,6 +924,7 @@ dependencies = [
  "crossterm",
  "ratatui",
  "ropey",
+ "utils",
 ]
 
 [[package]]
