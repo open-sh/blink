@@ -12,22 +12,18 @@ requests = [
     { name = "Delete User", url = "http://example.com/api/users/1", body = "", method = "DELETE" },
 ]
 
+# Example of keybinding remapping.
 [[keybindings]]
 key = "b"
 modifiers = ["Control"]
 command = "MoveCursorLeft"
 
 [[keybindings]]
-key = "a"
+key = "f"
 modifiers = ["Control"]
 command = "MoveCursorRight"
 
 [[keybindings]]
 key = "c"
 modifiers = ["Control"]
-command = "Quit"
-
-[[keybindings]]
-key = "l"
-modifiers = ["Shift"]
 command = "Quit"

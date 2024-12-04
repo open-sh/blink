@@ -179,8 +179,17 @@ impl BlinkState {
             .unwrap_or_else(|| "Hello not from the config".to_string());
         self.renderer.update_message(new_message);
 
+        // Update requests.
         let new_requests = self.config.local_requests.requests.clone();
         self.renderer.update_requests(new_requests);
+
+        // Update keybindings.
+        self.key_bindings = KeybindingMap::default_keybindings();
+        if !self.config.keybindings.is_empty() {
+            self.key_bindings
+                .add_bindings_from_config(&self.config.keybindings)
+                .context("ERROR: Adding keybindings from reloaded config")?;
+        }
 
         info!("Config reloaded.");
         Ok(())
