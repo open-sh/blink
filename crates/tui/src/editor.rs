@@ -34,7 +34,8 @@ impl<'a> Editor<'a> {
 
     pub fn enter_normal_mode(&mut self) {
         if self.vim_mode {
-            self.mode = VimMode::Normal
+            self.mode = VimMode::Normal;
+            self.clear_selection()
         }
     }
 
@@ -140,11 +141,25 @@ impl<'a> Editor<'a> {
         self.text_area.move_cursor(CursorMove::Up)
     }
 
+    pub fn move_cursor_up_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphBack)
+    }
+
     pub fn move_cursor_up_selecting(&mut self) {
         if !self.text_area.is_selecting() {
             self.text_area.start_selection();
         }
         self.text_area.move_cursor(CursorMove::Up)
+    }
+
+    pub fn move_cursor_up_paragraph_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphBack)
     }
 
     pub fn move_cursor_down(&mut self) {
@@ -154,11 +169,55 @@ impl<'a> Editor<'a> {
         self.text_area.move_cursor(CursorMove::Down)
     }
 
+    pub fn move_cursor_down_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphForward)
+    }
+
     pub fn move_cursor_down_selecting(&mut self) {
         if !self.text_area.is_selecting() {
             self.text_area.start_selection();
         }
         self.text_area.move_cursor(CursorMove::Down)
+    }
+
+    pub fn move_cursor_down_paragraph_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphForward)
+    }
+
+    pub fn move_cursor_bol(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::Head);
+    }
+
+    pub fn move_cursor_bol_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::Head);
+    }
+
+    pub fn move_cursor_eol(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::End);
+    }
+
+    pub fn move_cursor_eol_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::End);
     }
 
     //
@@ -174,11 +233,43 @@ impl<'a> Editor<'a> {
         _ = self.text_area.delete_next_char();
     }
 
-    pub fn delete_word(&mut self) {
+    pub fn delete_word_back(&mut self) {
         let _ = self.text_area.delete_word(); // We don't really care about the bool value here.
+    }
+
+    pub fn delete_word_forward(&mut self) {
+        let _ = self.text_area.delete_next_word();
     }
 
     pub fn backspace(&mut self) {
         let _ = self.text_area.delete_char();
+    }
+
+    pub fn delete_until_eol(&mut self) {
+        let _ = self.text_area.delete_line_by_end();
+    }
+
+    pub fn delete_until_hol(&mut self) {
+        let _ = self.text_area.delete_line_by_head();
+    }
+
+    pub fn undo(&mut self) {
+        let _ = self.text_area.undo();
+    }
+
+    pub fn redo(&mut self) {
+        let _ = self.text_area.redo();
+    }
+
+    pub fn copy(&mut self) {
+        self.text_area.copy();
+    }
+
+    pub fn paste(&mut self) {
+        self.text_area.paste();
+    }
+
+    pub fn cut(&mut self) {
+        self.text_area.cut();
     }
 }

@@ -26,10 +26,14 @@ pub enum BlinkCommand {
 
     // Movement.
     MoveCursorUp,
+    MoveCursorUpParagraph,
     MoveCursorUpSelecting,
+    MoveCursorUpParagraphSelecting,
 
     MoveCursorDown,
+    MoveCursorDownParagraph,
     MoveCursorDownSelecting,
+    MoveCursorDownParagraphSelecting,
 
     MoveCursorLeft,
     MoveCursorLeftSelecting,
@@ -44,11 +48,27 @@ pub enum BlinkCommand {
     MoveCursorRightByWordEnd,
     MoveCursorRightByWordParagraph,
 
+    MoveCusorBOL,
+    MoveCusorBOLIntoInsertMode,
+    MoveCusorBOLSelecting,
+    MoveCusorEOL,
+    MoveCusorEOLIntoInsertMode,
+    MoveCusorEOLSelecting,
+
     // Editing.
     InsertChar(char),
     DeleteBackward,
-    DeleteWord,
+    DeleteWordBack,
     DeleteForward,
+    DeleteUntilEOL,
+    DeleteUntilHOL,
+    DeleteWordForward,
+    Undo,
+    Redo,
+
+    Copy,
+    Paste,
+    Cut,
 }
 
 /// Capture events from the terminal and return them into a Vector.

@@ -65,6 +65,11 @@ impl KeybindingMap {
     pub fn default_keybindings() -> Self {
         let mut map = KeybindingMap::new();
 
+        //
+        // Insert mode bindings.
+        // Also valid as to when vim_mode is false.
+        //
+
         map.add_binding(input!(Key::Char('b'), true, false, false), BlinkCommand::MoveCursorLeft, VimMode::Insert);
         map.add_binding(input!(Key::Char('b'), false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Insert);
         map.add_binding(input!(Key::Char('B'), false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Insert);
@@ -80,10 +85,14 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Insert);
         map.add_binding(input!(Key::Char('p'), true, false, false), BlinkCommand::MoveCursorUp, VimMode::Insert);
         map.add_binding(input!(Key::Char('p'), true, false, true), BlinkCommand::MoveCursorUpSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Char('p'), false, true, false), BlinkCommand::MoveCursorUpParagraph, VimMode::Insert);
+        map.add_binding(input!(Key::Char('P'), false, true, true), BlinkCommand::MoveCursorUpParagraphSelecting, VimMode::Insert);
 
         map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Insert);
         map.add_binding(input!(Key::Char('n'), true, false, false), BlinkCommand::MoveCursorDown, VimMode::Insert);
         map.add_binding(input!(Key::Char('n'), true, false, true), BlinkCommand::MoveCursorDownSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Char('n'), false, true, false), BlinkCommand::MoveCursorDownParagraph, VimMode::Insert);
+        map.add_binding(input!(Key::Char('N'), false, true, true), BlinkCommand::MoveCursorDownParagraphSelecting, VimMode::Insert);
 
         map.add_binding(input!(Key::Left), BlinkCommand::MoveCursorLeft, VimMode::Insert);
         map.add_binding(input!(Key::Left, false, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Insert);
@@ -101,15 +110,42 @@ impl KeybindingMap {
 
         map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Insert);
         map.add_binding(input!(Key::Up, false, false, true), BlinkCommand::MoveCursorUpSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Up, true, false, false), BlinkCommand::MoveCursorUpParagraph, VimMode::Insert);
+        map.add_binding(input!(Key::Up, true, false, true), BlinkCommand::MoveCursorUpParagraphSelecting, VimMode::Insert);
 
         map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Insert);
         map.add_binding(input!(Key::Down, false, false, true), BlinkCommand::MoveCursorDownSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Down, true, false, false), BlinkCommand::MoveCursorDownParagraph, VimMode::Insert);
+        map.add_binding(input!(Key::Down, true, false, true), BlinkCommand::MoveCursorDownParagraphSelecting, VimMode::Insert);
 
         map.add_binding(input!(Key::Backspace), BlinkCommand::DeleteBackward, VimMode::Insert);
-        map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWord, VimMode::Insert);
+        map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWordBack, VimMode::Insert);
+
         map.add_binding(input!(Key::Delete), BlinkCommand::DeleteForward, VimMode::Insert);
+        map.add_binding(input!(Key::Delete, false, true, false), BlinkCommand::DeleteWordForward, VimMode::Insert);
+
+        map.add_binding(input!(Key::Char('k'), true, false, false), BlinkCommand::DeleteUntilEOL, VimMode::Insert);
+        map.add_binding(input!(Key::Char('j'), true, false, false), BlinkCommand::DeleteUntilHOL, VimMode::Insert);
+
+        map.add_binding(input!(Key::Char('u'), true, false, false), BlinkCommand::Undo, VimMode::Insert);
+        map.add_binding(input!(Key::Char('r'), true, false, false), BlinkCommand::Redo, VimMode::Insert);
+
+        map.add_binding(input!(Key::Char('c'), true, false, false), BlinkCommand::Copy, VimMode::Insert);
+        map.add_binding(input!(Key::Char('v'), true, false, false), BlinkCommand::Paste, VimMode::Insert);
+        map.add_binding(input!(Key::Char('x'), true, false, false), BlinkCommand::Cut, VimMode::Insert);
+
+        map.add_binding(input!(Key::Char('a'), true, false, false), BlinkCommand::MoveCusorBOL, VimMode::Insert);
+        map.add_binding(input!(Key::Char('A'), true, false, true), BlinkCommand::MoveCusorBOLSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Home), BlinkCommand::MoveCusorBOL, VimMode::Insert);
+        map.add_binding(input!(Key::Home, false, false, true), BlinkCommand::MoveCusorBOLSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Char('e'), true, false, false), BlinkCommand::MoveCusorEOL, VimMode::Insert);
+        map.add_binding(input!(Key::Char('E'), true, false, true), BlinkCommand::MoveCusorEOLSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::End), BlinkCommand::MoveCusorEOL, VimMode::Insert);
+        map.add_binding(input!(Key::End, false, false, true), BlinkCommand::MoveCusorEOLSelecting, VimMode::Insert);
 
         map.add_binding(input!(Key::Enter), BlinkCommand::Enter, VimMode::Insert);
+
+        map.add_binding(input![Key::Esc], BlinkCommand::EnterNormalMode, VimMode::Insert);
 
         //
         // Normal mode bindings.
@@ -132,13 +168,12 @@ impl KeybindingMap {
 
         map.add_binding(input!(Key::Char('x')), BlinkCommand::DeleteForward, VimMode::Normal);
 
+        map.add_binding(input!(Key::Char('$')), BlinkCommand::MoveCusorEOL, VimMode::Normal);
+        map.add_binding(input!(Key::Char('A'), false, false, true), BlinkCommand::MoveCusorEOLIntoInsertMode, VimMode::Normal);
+        map.add_binding(input!(Key::Char('0')), BlinkCommand::MoveCusorBOL, VimMode::Normal);
+        map.add_binding(input!(Key::Char('I'), false, false, true), BlinkCommand::MoveCusorBOLIntoInsertMode, VimMode::Normal);
+
         map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Normal);
-
-        //
-        // Insert mode bindings.
-        //
-
-        map.add_binding(input![Key::Esc], BlinkCommand::EnterNormalMode, VimMode::Insert);
 
         //
         // Visual mode bindings.
@@ -155,6 +190,11 @@ impl KeybindingMap {
 
         map.add_binding(input!(Key::Char('b'), false, false, true), BlinkCommand::MoveCursorLeftByWordParagraph, VimMode::Visual);
         map.add_binding(input!(Key::Char('w'), false, false, true), BlinkCommand::MoveCursorRightByWordParagraph, VimMode::Visual);
+
+        map.add_binding(input!(Key::Char('$')), BlinkCommand::MoveCusorEOL, VimMode::Visual);
+        map.add_binding(input!(Key::Char('0')), BlinkCommand::MoveCusorBOL, VimMode::Visual);
+
+        map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Visual);
 
         map.add_binding(input![Key::Esc], BlinkCommand::EnterNormalMode, VimMode::Visual);
 
@@ -245,7 +285,7 @@ fn parse_blink_command(cmd: &str) -> Result<BlinkCommand> {
 
         "deletebackward" => Ok(BlinkCommand::DeleteBackward),
         "deleteforward" => Ok(BlinkCommand::DeleteForward),
-        "deleteword" => Ok(BlinkCommand::DeleteWord),
+        "deleteword" => Ok(BlinkCommand::DeleteWordBack),
         _ => Err(anyhow!("Unknown BlinkCommand: {}", cmd)),
     }
 }
