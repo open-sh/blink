@@ -1,35 +1,35 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use config::KeybindingConfig;
-use crossterm::event::{KeyCode, KeyModifiers};
+use tui_textarea::{Input, Key};
 use utils::VimMode;
 
 use crate::events::BlinkCommand;
 
-/// Represents a combination of a key with it's modifiers.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KeyCombination {
-    pub key: KeyCode,
-    pub modifiers: KeyModifiers,
-}
-
-impl Hash for KeyCombination {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.key.hash(state);
-        self.modifiers.bits().hash(state);
-    }
-}
-
-impl KeyCombination {
-    pub fn new(key: KeyCode, modifiers: KeyModifiers) -> Self {
-        Self { key, modifiers }
-    }
+/// Helper macro to create an `Input`.
+macro_rules! input {
+    ($key:expr, $ctrl:expr, $alt:expr, $shift:expr) => {
+        Input {
+            key: $key,
+            ctrl: $ctrl,
+            alt: $alt,
+            shift: $shift,
+        }
+    };
+    ($key:expr) => {
+        Input {
+            key: $key,
+            ctrl: false,
+            alt: false,
+            shift: false,
+        }
+    };
 }
 
 /// Maps `KeyCombination` to a `BlinkCommand`.
 pub struct KeybindingMap {
-    bindings: HashMap<KeyCombination, (BlinkCommand, VimMode)>,
+    bindings: HashMap<Input, (BlinkCommand, VimMode)>,
 }
 
 impl KeybindingMap {
@@ -39,16 +39,18 @@ impl KeybindingMap {
         }
     }
 
-    pub fn add_binding(&mut self, key_comb: KeyCombination, command: BlinkCommand, mode: VimMode) {
-        self.bindings.insert(key_comb, (command, mode));
+    pub fn add_binding(&mut self, input: Input, command: BlinkCommand, mode: VimMode) {
+        self.bindings.insert(input, (command, mode));
     }
 
-    pub fn get_command(&self, key_comb: KeyCombination, current_mode: VimMode) -> Option<BlinkCommand> {
-        if let Some((cmd, binding_mode)) = self.bindings.get(&key_comb) {
+    pub fn get_command(
+        &self,
+        input: Input,
+        current_mode: VimMode,
+    ) -> Option<BlinkCommand> {
+        if let Some((cmd, binding_mode)) = self.bindings.get(&input) {
             match binding_mode {
-                VimMode::Any => {
-                    Some(*cmd)
-                }
+                VimMode::Any => Some(*cmd),
                 VimMode::Normal => {
                     if current_mode == VimMode::Normal {
                         Some(*cmd)
@@ -72,111 +74,49 @@ impl KeybindingMap {
     pub fn default_keybindings() -> Self {
         let mut map = KeybindingMap::new();
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
-            BlinkCommand::MoveCursorLeft,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Char('b'), true, false, false), BlinkCommand::MoveCursorLeft, VimMode::Any);
+        map.add_binding(input!(Key::Char('b'), true, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Char('b'), false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
-            BlinkCommand::MoveCursorRight,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Char('f'), true, false, false), BlinkCommand::MoveCursorRight, VimMode::Any);
+        map.add_binding(input!(Key::Char('f'), false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('q'), KeyModifiers::CONTROL),
-            BlinkCommand::Quit,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Char('q'), true, false, false), BlinkCommand::Quit, VimMode::Any);
+        map.add_binding(input!(Key::Tab), BlinkCommand::ToggleFocus, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Tab, KeyModifiers::NONE),
-            BlinkCommand::ToggleFocus,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Any);
+        map.add_binding(input!(Key::Char('p'), true, false, false), BlinkCommand::MoveCursorUp, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Up, KeyModifiers::NONE),
-            BlinkCommand::MoveCursorUp,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Any);
+        map.add_binding(input!(Key::Char('n'), true, false, false), BlinkCommand::MoveCursorDown, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Down, KeyModifiers::NONE),
-            BlinkCommand::MoveCursorDown,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Left), BlinkCommand::MoveCursorLeft, VimMode::Any);
+        map.add_binding(input!(Key::Left, false, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Left, true, false, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Left, KeyModifiers::NONE),
-            BlinkCommand::MoveCursorLeft,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Right), BlinkCommand::MoveCursorRight, VimMode::Any);
+        map.add_binding(input!(Key::Right, false, false, true), BlinkCommand::MoveCursorRightSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Right, true, false, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Right, KeyModifiers::NONE),
-            BlinkCommand::MoveCursorRight,
-            VimMode::Any
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Backspace, KeyModifiers::NONE),
-            BlinkCommand::DeleteBackward,
-            VimMode::Any
-        );
+        map.add_binding(input!(Key::Backspace), BlinkCommand::DeleteBackward, VimMode::Any);
+        map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWord, VimMode::Any);
+        map.add_binding(input!(Key::Delete), BlinkCommand::DeleteForward, VimMode::Normal);
 
         //
-        // Normal mode keybindings.
+        // Normal mode bindings.
         //
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('k'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorUp,
-            VimMode::Normal
-        );
+        map.add_binding(input!(Key::Char('k')), BlinkCommand::MoveCursorUp, VimMode::Normal);
+        map.add_binding(input!(Key::Char('h')), BlinkCommand::MoveCursorLeft, VimMode::Normal);
+        map.add_binding(input!(Key::Char('j')), BlinkCommand::MoveCursorDown, VimMode::Normal);
+        map.add_binding(input!(Key::Char('l')), BlinkCommand::MoveCursorRight, VimMode::Normal);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('j'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorDown,
-            VimMode::Normal
-        );
+        map.add_binding(input!(Key::Char('b')), BlinkCommand::MoveCursorLeftByWord, VimMode::Normal);
+        map.add_binding(input!(Key::Char('w')), BlinkCommand::MoveCursorRightByWord, VimMode::Normal);
+        map.add_binding(input!(Key::Char('e')), BlinkCommand::MoveCursorRightByWordEnd, VimMode::Normal);
 
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('i'), KeyModifiers::NONE),
-            BlinkCommand::EnterInsertMode,
-            VimMode::Normal
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('h'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorLeft,
-            VimMode::Normal
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('j'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorDown,
-            VimMode::Normal
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('k'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorUp,
-            VimMode::Normal
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('l'), KeyModifiers::NONE),
-            BlinkCommand::MoveCursorRight,
-            VimMode::Normal
-        );
-
-        map.add_binding(
-            KeyCombination::new(KeyCode::Char('x'), KeyModifiers::NONE),
-            BlinkCommand::DeleteForward,
-            VimMode::Normal
-        );
+        map.add_binding(input!(Key::Char('i')), BlinkCommand::EnterInsertMode, VimMode::Normal);
+        map.add_binding(input!(Key::Char('x')), BlinkCommand::DeleteForward, VimMode::Normal);
 
         return map;
     }
@@ -185,25 +125,11 @@ impl KeybindingMap {
     /// These bindings will overwrite the default ones if there is any conflict.
     pub fn add_bindings_from_config(&mut self, config_bindings: &[KeybindingConfig]) -> Result<()> {
         for binding in config_bindings {
-            let mut key = parse_key_code(&binding.key)
-                .with_context(|| format!("Invalid key code: {}", binding.key))?;
-            let modifiers = parse_key_modifiers(&binding.modifiers)
-                .with_context(|| format!("Invalid modifiers: {:?}", binding.modifiers))?;
-            let command = parse_blink_command(&binding.command)
-                .with_context(|| format!("Invalid command: {}", binding.command))?;
+            let key = parse_key(binding)?;
             let mode = parse_mode(&binding.mode);
+            let command = parse_blink_command(&binding.command)?;
 
-            // If shift is pressed and there is a char, map it to upper.
-            if modifiers.contains(KeyModifiers::SHIFT) {
-                if let KeyCode::Char(c) = key {
-                    if c.is_ascii_lowercase() {
-                        key = KeyCode::Char(c.to_ascii_uppercase());
-                    }
-                }
-            }
-
-            let key_comb = KeyCombination::new(key, modifiers);
-            self.add_binding(key_comb, command, mode);
+            self.add_binding(key, command, mode);
         }
         Ok(())
     }
@@ -213,75 +139,60 @@ pub fn parse_mode(s: &str) -> VimMode {
     match s.to_lowercase().as_str() {
         "normal" => VimMode::Normal,
         "insert" => VimMode::Insert,
-        _ => VimMode::Any
+        _ => VimMode::Any,
     }
 }
 
-pub fn parse_key_code(key: &str) -> Result<KeyCode> {
-    match key {
-        "a" => Ok(KeyCode::Char('a')),
-        "b" => Ok(KeyCode::Char('b')),
-        "c" => Ok(KeyCode::Char('c')),
-        "d" => Ok(KeyCode::Char('d')),
-        "e" => Ok(KeyCode::Char('e')),
-        "f" => Ok(KeyCode::Char('f')),
-        "g" => Ok(KeyCode::Char('g')),
-        "h" => Ok(KeyCode::Char('h')),
-        "i" => Ok(KeyCode::Char('i')),
-        "j" => Ok(KeyCode::Char('j')),
-        "k" => Ok(KeyCode::Char('k')),
-        "l" => Ok(KeyCode::Char('l')),
-        "m" => Ok(KeyCode::Char('m')),
-        "n" => Ok(KeyCode::Char('n')),
-        "o" => Ok(KeyCode::Char('o')),
-        "p" => Ok(KeyCode::Char('p')),
-        "q" => Ok(KeyCode::Char('q')),
-        "r" => Ok(KeyCode::Char('r')),
-        "s" => Ok(KeyCode::Char('s')),
-        "t" => Ok(KeyCode::Char('t')),
-        "u" => Ok(KeyCode::Char('u')),
-        "v" => Ok(KeyCode::Char('v')),
-        "w" => Ok(KeyCode::Char('w')),
-        "x" => Ok(KeyCode::Char('x')),
-        "y" => Ok(KeyCode::Char('y')),
-        "z" => Ok(KeyCode::Char('z')),
-        "enter" => Ok(KeyCode::Enter),
-        "backspace" => Ok(KeyCode::Backspace),
-        "up" => Ok(KeyCode::Up),
-        "down" => Ok(KeyCode::Down),
-        "left" => Ok(KeyCode::Left),
-        "right" => Ok(KeyCode::Right),
-        "tab" => Ok(KeyCode::Tab),
-        "esc" | "escape" => Ok(KeyCode::Esc),
-        _ => Err(anyhow!("Unknown key code: {}", key)),
-    }
-}
+fn parse_key(binding: &KeybindingConfig) -> Result<Input> {
+    let key = match binding.key.to_lowercase().as_str() {
+        "enter" => Key::Enter,
+        "backspace" => Key::Backspace,
+        "tab" => Key::Tab,
+        "esc" | "escape" => Key::Esc,
+        "up" => Key::Up,
+        "down" => Key::Down,
+        "left" => Key::Left,
+        "right" => Key::Right,
+        k if k.len() == 1 => Key::Char(k.chars().next().unwrap()),
+        _ => return Err(anyhow!("Unknown key code: {}", binding.key)),
+    };
 
-pub fn parse_key_modifiers(mods: &[String]) -> Result<KeyModifiers> {
-    let mut modifiers = KeyModifiers::NONE;
-    for m in mods {
+    let mut ctrl = false;
+    let mut alt = false;
+    let mut shift = false;
+
+    for m in &binding.modifiers {
         match m.to_lowercase().as_str() {
-            "control" | "ctrl" => modifiers |= KeyModifiers::CONTROL,
-            "alt" => modifiers |= KeyModifiers::ALT,
-            "shift" => modifiers |= KeyModifiers::SHIFT,
+            "control" | "ctrl" => ctrl = true,
+            "alt" => alt = true,
+            "shift" => shift = true,
             _ => return Err(anyhow!("Unknown key modifier: {}", m)),
         }
     }
-    Ok(modifiers)
+
+    Ok(Input {
+        key,
+        ctrl,
+        alt,
+        shift,
+    })
 }
 
-pub fn parse_blink_command(cmd: &str) -> Result<BlinkCommand> {
+fn parse_blink_command(cmd: &str) -> Result<BlinkCommand> {
     match cmd.to_lowercase().as_str() {
         "quit" => Ok(BlinkCommand::Quit),
         "togglefocus" => Ok(BlinkCommand::ToggleFocus),
         "movecursorup" => Ok(BlinkCommand::MoveCursorUp),
         "movecursordown" => Ok(BlinkCommand::MoveCursorDown),
         "movecursorleft" => Ok(BlinkCommand::MoveCursorLeft),
+        "movecursorleftselecting" => Ok(BlinkCommand::MoveCursorLeftSelecting),
         "movecursorright" => Ok(BlinkCommand::MoveCursorRight),
         "deletebackward" => Ok(BlinkCommand::DeleteBackward),
         "deleteforward" => Ok(BlinkCommand::DeleteForward),
         "enterinsertmode" => Ok(BlinkCommand::EnterInsertMode),
         "enternormalmode" => Ok(BlinkCommand::EnterNormalMode),
+        "movecursorleftbyword" => Ok(BlinkCommand::MoveCursorLeftByWord),
+        "movecursorrightbyword" => Ok(BlinkCommand::MoveCursorRightByWord),
         _ => Err(anyhow!("Unknown BlinkCommand: {}", cmd)),
     }
 }

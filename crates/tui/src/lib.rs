@@ -15,12 +15,12 @@ mod editor;
 pub mod events;
 pub mod keys;
 mod side_panel;
-mod url_input;
+pub mod url_input;
 
 /// `BlinkRenderer` controls the state in which the terminal should be rendered.
-pub struct BlinkRenderer {
+pub struct BlinkRenderer<'a> {
     pub focus_area: FocusArea,
-    pub url_input: URLInput,
+    pub url_input: URLInput<'a>,
     pub editor: Editor,
     pub side_panel: SidePanel,
     pub vim_mode: bool,
@@ -34,7 +34,7 @@ pub enum FocusArea {
     Editor,
 }
 
-impl BlinkRenderer {
+impl<'a> BlinkRenderer<'a> {
     pub fn new(requests: Vec<HTTPRequest>, vim_mode: bool) -> Self {
         Self {
             focus_area: FocusArea::SidePanel,
@@ -132,19 +132,20 @@ impl BlinkRenderer {
             Block::default().borders(Borders::ALL).title("URL")
         };
 
-        let url_input = Paragraph::new(self.url_input.input.clone())
-            .block(block)
-            .style(Style::default().fg(Color::White));
+        self.url_input.text_area.set_block(block);
 
-        f.render_widget(url_input, area);
+        f.render_widget(&self.url_input.text_area, area);
 
-        if self.focus_area == FocusArea::URLInput {
-            // Cursor position.
-            let x = area.x + self.url_input.cursor_position as u16 + 1; // +1 for left border.
-            let y = area.y + 1; // Inside block.
+        // if self.focus_area == FocusArea::URLInput {
+        //     // Pega a posição do cursor no TextArea
+        //     let cursor_line = self.url_input.text_area.cursor();
+        //     let cursor_col = self.url_input.text_area.cursor_col();
 
-            f.set_cursor_position(Position::new(x, y));
-        }
+        //     // Ajusta o cursor do terminal
+        //     let x = area.x + cursor_col as u16 + 1; // +1 por causa da borda esquerda
+        //     let y = area.y + cursor_line as u16 + 1; // +1 por causa da borda superior
+        //     f.set_cursor_position(Position::new(x, y));
+        // }
     }
 
     pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {

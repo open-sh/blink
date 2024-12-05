@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 ratatui = "0.29.0"
+tui-textarea = "0.7.0"
 crossterm = "0.28.1"
 anyhow = { workspace = true }
 config = { path = "../config" }

@@ -6,15 +6,13 @@ use std::{
     sync::mpsc::{channel, Receiver},
 };
 use tui::{
-    events::{handle_event, poll_events, BlinkCommand},
-    keys::KeybindingMap,
-    BlinkRenderer, FocusArea,
+    events::{handle_event, poll_events, BlinkCommand}, keys::KeybindingMap, url_input::tui_textarea::CursorMove, BlinkRenderer, FocusArea
 };
 use utils::{error, info};
 
 /// Main state of the application.
-pub struct BlinkState {
-    pub renderer: BlinkRenderer,
+pub struct BlinkState<'a> {
+    pub renderer: BlinkRenderer<'a>,
     pub config: BlinkConfig,
     // Receiver to receive watcher events of configuration
     config_watcher_rx: Receiver<NotifyResult<NotifyEvent>>,
@@ -22,7 +20,7 @@ pub struct BlinkState {
     key_bindings: KeybindingMap,
 }
 
-impl BlinkState {
+impl<'a> BlinkState<'a> {
     /// The states gets initialized only after the config is loaded.
     /// This happens so that we can inject properties (if they exist)
     /// from the `BlinkConfig` (global and/or local) into the `BlinkState`.
@@ -113,7 +111,7 @@ impl BlinkState {
                 FocusArea::SidePanel => self.renderer.side_panel.mode,
             };
 
-            let commands = handle_event(event, self.renderer.focus_area, &self.key_bindings, &event_mode);
+            let commands = handle_event(event, &self.key_bindings, &event_mode);
             for command in commands {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
@@ -122,9 +120,15 @@ impl BlinkState {
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
                     BlinkCommand::InsertChar(c) => self.insert_char(c),
                     BlinkCommand::DeleteBackward => self.backspace(),
-                    BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
-                    BlinkCommand::MoveCursorRight => self.move_cursor_right(),
                     BlinkCommand::DeleteForward => self.delete_char(),
+                    BlinkCommand::DeleteWord => self.delete_word(),
+                    BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
+                    BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
+                    BlinkCommand::MoveCursorLeftByWord => self.move_cursor_left_by_word(),
+                    BlinkCommand::MoveCursorRight => self.move_cursor_right(),
+                    BlinkCommand::MoveCursorRightSelecting => self.move_cursor_right_selecting(),
+                    BlinkCommand::MoveCursorRightByWord => self.move_cursor_right_by_word(),
+                    BlinkCommand::MoveCursorRightByWordEnd => self.move_cursor_right_by_word_end(),
                     BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
                     BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
                 }
@@ -234,10 +238,45 @@ impl BlinkState {
         }
     }
 
+    fn move_cursor_left_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_left_selecting(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_left_by_word(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.text_area.move_cursor(CursorMove::WordBack),
+            _ => {}
+        }
+    }
+
     fn move_cursor_right(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right(),
             FocusArea::Editor => self.renderer.editor.move_cursor_right(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_selecting(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right_by_word(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right_by_word_end(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_end(),
             _ => {}
         }
     }
@@ -248,7 +287,7 @@ impl BlinkState {
 
     fn insert_char(&mut self, c: char) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => self.renderer.url_input.insert_char(c),
+            FocusArea::URLInput => self.renderer.url_input.text_area.insert_char(c),
             FocusArea::Editor => self.renderer.editor.insert_char(c),
             _ => {}
         }
@@ -257,17 +296,23 @@ impl BlinkState {
     fn backspace(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.backspace(),
-            FocusArea::Editor => self.renderer.editor.backspace(),
-            _ => {}
+            // FocusArea::Editor => self.renderer.editor.backspace(),
+            _ => { }
         }
     }
 
     fn delete_char(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => {
-                // TODO: Gotta make delete_char for URLInput.
-            }
+            FocusArea::URLInput => self.renderer.url_input.delete_char(),
             FocusArea::Editor => self.renderer.editor.delete_char(),
+            _ => {}
+        }
+    }
+
+    fn delete_word(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.delete_word(),
+            FocusArea::Editor => { /* TODO */ }
             _ => {}
         }
     }

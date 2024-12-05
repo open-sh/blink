@@ -6,7 +6,7 @@
 message = "hi from the config"
 
 # Vim mode is optional.
-vim_mode = true
+vim_mode = false # For xaxau - https://github.com/lucaoshow (haha, pussy).
 
 [local_requests]
 requests = [
@@ -17,16 +17,16 @@ requests = [
 
 # Example of keybinding remapping.
 #
-# NOTE: If mode is not specified, it will assume it's "any"
-[[keybindings]]
-key = "b"
-modifiers = ["Control"]
-command = "MoveCursorLeft"
+# NOTE: If mode is not specified, it will assume it's "any".
+# [[keybindings]]
+# key = "b"
+# modifiers = ["Control"]
+# command = "MoveCursorLeft"
 
-[[keybindings]]
-key = "f"
-modifiers = ["Control"]
-command = "MoveCursorRight"
+# [[keybindings]]
+# key = "f"
+# modifiers = ["Control"]
+# command = "MoveCursorRight"
 
 [[keybindings]]
 key = "c"

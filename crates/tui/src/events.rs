@@ -2,12 +2,10 @@ use std::time::Duration;
 
 use anyhow::Result;
 pub use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
+use tui_textarea::{Input, Key};
 use utils::VimMode;
 
-use crate::{
-    keys::{KeyCombination, KeybindingMap},
-    FocusArea,
-};
+use crate::keys::KeybindingMap;
 
 /// Event is any type of terminal event that Blink can compute.
 pub enum Event {
@@ -24,9 +22,15 @@ pub enum BlinkCommand {
     MoveCursorUp,
     MoveCursorDown,
     MoveCursorLeft,
+    MoveCursorLeftSelecting,
+    MoveCursorLeftByWord,
     MoveCursorRight,
+    MoveCursorRightSelecting,
+    MoveCursorRightByWord,
+    MoveCursorRightByWordEnd,
     InsertChar(char),
     DeleteBackward,
+    DeleteWord,
     DeleteForward,
     EnterInsertMode,
     EnterNormalMode,
@@ -53,7 +57,6 @@ pub fn poll_events() -> Result<Vec<Event>> {
 /// Maps `CrosstermEvent` to a Vec<BlinkCommand>.
 pub fn handle_event(
     event: Event,
-    focus_area: FocusArea,
     bindings: &KeybindingMap,
     editor_mode: &VimMode,
 ) -> Vec<BlinkCommand> {
@@ -61,25 +64,21 @@ pub fn handle_event(
 
     match event {
         Event::KeyPress(key_event) => {
-            let key_comb = KeyCombination::new(key_event.code, key_event.modifiers);
+            let input: Input = key_event.into();
 
-            if focus_area == FocusArea::Editor || focus_area == FocusArea::URLInput || focus_area == FocusArea::SidePanel {
-                if let Some(command) = bindings.get_command(key_comb, *editor_mode) {
-                    // Found a command whose mode is matched with the current one.
-                    commands.push(command);
-                } else {
-                    if *editor_mode == VimMode::Insert || *editor_mode == VimMode::Any {
-                        match key_event.code {
-                            KeyCode::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
-                            KeyCode::Esc => commands.push(BlinkCommand::EnterNormalMode),
-                            KeyCode::Backspace => commands.push(BlinkCommand::DeleteBackward),
-                            _ => {}
-                        }
-                    }
-                }
+            if let Some(command) = bindings.get_command(input.clone(), *editor_mode) {
+                // Found a command whose mode is matched with the current one.
+                commands.push(command);
             } else {
-                if let Some(command) = bindings.get_command(key_comb, VimMode::Any) {
-                    commands.push(command);
+                // If we haven't found anything, and we are in `Insert`/`Any`, we can
+                // handle it directly.
+                if *editor_mode == VimMode::Insert || *editor_mode == VimMode::Any {
+                    match input.key {
+                        Key::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
+                        Key::Esc => commands.push(BlinkCommand::EnterNormalMode),
+                        Key::Backspace => commands.push(BlinkCommand::DeleteBackward),
+                        _ => {}
+                    }
                 }
             }
         }
