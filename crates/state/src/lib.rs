@@ -6,7 +6,7 @@ use std::{
     sync::mpsc::{channel, Receiver},
 };
 use tui::{
-    events::{handle_event, poll_events, BlinkCommand}, keys::KeybindingMap, url_input::tui_textarea::CursorMove, BlinkRenderer, FocusArea
+    events::{handle_event, poll_events, BlinkCommand}, keys::KeybindingMap, BlinkRenderer, FocusArea
 };
 use utils::{error, info};
 
@@ -116,20 +116,27 @@ impl<'a> BlinkState<'a> {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
                     BlinkCommand::ToggleFocus => self.toggle_focus(),
+
+                    // Movement.
                     BlinkCommand::MoveCursorUp => self.move_cursor_up(),
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
+                    BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
+                    BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
+                    BlinkCommand::MoveCursorLeftByWord => self.move_cursor_left_by_word(),
+                    BlinkCommand::MoveCursorLeftByWordParagraph => self.move_cursor_left_by_word_paragraph(),
+                    BlinkCommand::MoveCursorRight => self.move_cursor_right(),
+                    BlinkCommand::MoveCursorRightSelecting => self.move_cursor_right_selecting(),
+                    BlinkCommand::MoveCursorRightByWord => self.move_cursor_right_by_word(),
+                    BlinkCommand::MoveCursorRightByWordParagraph => self.move_cursor_right_by_word_paragraph(),
+                    BlinkCommand::MoveCursorRightByWordEnd => self.move_cursor_right_by_word_end(),
+
+                    // Editing
                     BlinkCommand::InsertChar(c) => self.insert_char(c),
                     BlinkCommand::DeleteBackward => self.backspace(),
                     BlinkCommand::DeleteForward => self.delete_char(),
                     BlinkCommand::DeleteWord => self.delete_word(),
-                    BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
-                    BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
-                    BlinkCommand::MoveCursorLeftByWord => self.move_cursor_left_by_word(),
-                    BlinkCommand::MoveCursorRight => self.move_cursor_right(),
-                    BlinkCommand::MoveCursorRightSelecting => self.move_cursor_right_selecting(),
-                    BlinkCommand::MoveCursorRightByWord => self.move_cursor_right_by_word(),
-                    BlinkCommand::MoveCursorRightByWordEnd => self.move_cursor_right_by_word_end(),
                     BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
+                    BlinkCommand::EnterVisualMode => self.enter_visual_mode(),
                     BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
                 }
             }
@@ -247,7 +254,14 @@ impl<'a> BlinkState<'a> {
 
     fn move_cursor_left_by_word(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => self.renderer.url_input.text_area.move_cursor(CursorMove::WordBack),
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_left_by_word_paragraph(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word_paragraph(),
             _ => {}
         }
     }
@@ -270,6 +284,13 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right_by_word_paragraph(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_paragraph(),
             _ => {}
         }
     }
@@ -333,6 +354,14 @@ impl<'a> BlinkState<'a> {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.enter_normal_mode(),
             FocusArea::Editor => self.renderer.editor.enter_normal_mode(),
+            _ => {}
+        }
+    }
+
+    fn enter_visual_mode(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.enter_visual_mode(),
+            FocusArea::Editor => self.renderer.editor.enter_visual_mode(),
             _ => {}
         }
     }

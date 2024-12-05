@@ -28,5 +28,6 @@ pub use log::{debug, error, info, warn};
 pub enum VimMode {
     Normal,
     Insert,
+    Visual,
     Any // This represents that vim_mode is not currently active. It kinda works like Any to be honest.
 }

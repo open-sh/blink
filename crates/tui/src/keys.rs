@@ -29,7 +29,7 @@ macro_rules! input {
 
 /// Maps `KeyCombination` to a `BlinkCommand`.
 pub struct KeybindingMap {
-    bindings: HashMap<Input, (BlinkCommand, VimMode)>,
+    bindings: HashMap<Input, Vec<(BlinkCommand, VimMode)>>,
 }
 
 impl KeybindingMap {
@@ -40,35 +40,28 @@ impl KeybindingMap {
     }
 
     pub fn add_binding(&mut self, input: Input, command: BlinkCommand, mode: VimMode) {
-        self.bindings.insert(input, (command, mode));
+        self.bindings
+            .entry(input)
+            .or_insert_with(Vec::new)
+            .push((command, mode));
     }
 
-    pub fn get_command(
-        &self,
-        input: Input,
-        current_mode: VimMode,
-    ) -> Option<BlinkCommand> {
-        if let Some((cmd, binding_mode)) = self.bindings.get(&input) {
-            match binding_mode {
-                VimMode::Any => Some(*cmd),
-                VimMode::Normal => {
-                    if current_mode == VimMode::Normal {
-                        Some(*cmd)
-                    } else {
-                        None
-                    }
-                }
-                VimMode::Insert => {
-                    if current_mode == VimMode::Insert {
-                        Some(*cmd)
-                    } else {
-                        None
-                    }
+    pub fn get_command(&self, input: Input, current_mode: VimMode) -> Option<BlinkCommand> {
+        if let Some(bindings) = self.bindings.get(&input) {
+            // Verifica todos os bindings para essa tecla e retorna o primeiro que bater com o modo atual.
+            // Aqui a lógica é simples: se encontrar um correspondente ao modo exato ou Any, retorna.
+            // Se quiser priorizar certos modos, basta alterar a ordem ou lógica.
+            for (cmd, binding_mode) in bindings {
+                match binding_mode {
+                    VimMode::Any => return Some(*cmd),
+                    VimMode::Normal if current_mode == VimMode::Normal => return Some(*cmd),
+                    VimMode::Visual if current_mode == VimMode::Visual => return Some(*cmd),
+                    VimMode::Insert if current_mode == VimMode::Insert => return Some(*cmd),
+                    _ => {}
                 }
             }
-        } else {
-            None
         }
+        None
     }
 
     pub fn default_keybindings() -> Self {
@@ -115,8 +108,37 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Char('w')), BlinkCommand::MoveCursorRightByWord, VimMode::Normal);
         map.add_binding(input!(Key::Char('e')), BlinkCommand::MoveCursorRightByWordEnd, VimMode::Normal);
 
+        map.add_binding(input!(Key::Char('b'), false, false, true), BlinkCommand::MoveCursorLeftByWordParagraph, VimMode::Normal);
+        map.add_binding(input!(Key::Char('w'), false, false, true), BlinkCommand::MoveCursorRightByWordParagraph, VimMode::Normal);
+
         map.add_binding(input!(Key::Char('i')), BlinkCommand::EnterInsertMode, VimMode::Normal);
+        map.add_binding(input!(Key::Char('v')), BlinkCommand::EnterVisualMode, VimMode::Normal);
+
         map.add_binding(input!(Key::Char('x')), BlinkCommand::DeleteForward, VimMode::Normal);
+
+        //
+        // Insert mode bindings.
+        //
+
+        map.add_binding(input![Key::Esc], BlinkCommand::EnterNormalMode, VimMode::Insert);
+
+        //
+        // Visual mode bindings.
+        //
+
+        map.add_binding(input!(Key::Char('k')), BlinkCommand::MoveCursorUp, VimMode::Visual);
+        map.add_binding(input!(Key::Char('h')), BlinkCommand::MoveCursorLeft, VimMode::Visual);
+        map.add_binding(input!(Key::Char('j')), BlinkCommand::MoveCursorDown, VimMode::Visual);
+        map.add_binding(input!(Key::Char('l')), BlinkCommand::MoveCursorRight, VimMode::Visual);
+
+        map.add_binding(input!(Key::Char('b')), BlinkCommand::MoveCursorLeftByWord, VimMode::Visual);
+        map.add_binding(input!(Key::Char('w')), BlinkCommand::MoveCursorRightByWord, VimMode::Visual);
+        map.add_binding(input!(Key::Char('e')), BlinkCommand::MoveCursorRightByWordEnd, VimMode::Visual);
+
+        map.add_binding(input!(Key::Char('b'), false, false, true), BlinkCommand::MoveCursorLeftByWordParagraph, VimMode::Visual);
+        map.add_binding(input!(Key::Char('w'), false, false, true), BlinkCommand::MoveCursorRightByWordParagraph, VimMode::Visual);
+
+        map.add_binding(input![Key::Esc], BlinkCommand::EnterNormalMode, VimMode::Visual);
 
         return map;
     }

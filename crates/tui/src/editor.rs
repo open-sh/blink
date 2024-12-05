@@ -34,6 +34,12 @@ impl Editor {
         }
     }
 
+    pub fn enter_visual_mode(&mut self) {
+        if self.vim_mode {
+            self.mode = VimMode::Visual;
+        }
+    }
+
     pub fn insert_char(&mut self, c: char) {
         // Gotta make sure that `cursor_y` does not go beyond the number of existing lines.
         // If `cursor_y == self.content.len_lines()`, for instance, just insert a newline:

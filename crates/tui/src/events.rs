@@ -19,21 +19,28 @@ pub enum Event {
 pub enum BlinkCommand {
     Quit,
     ToggleFocus, // REFACTOR: Directional focus?
+    EnterInsertMode,
+    EnterVisualMode,
+    EnterNormalMode,
+
+    // Movement.
     MoveCursorUp,
     MoveCursorDown,
     MoveCursorLeft,
     MoveCursorLeftSelecting,
     MoveCursorLeftByWord,
+    MoveCursorLeftByWordParagraph,
     MoveCursorRight,
     MoveCursorRightSelecting,
     MoveCursorRightByWord,
     MoveCursorRightByWordEnd,
+    MoveCursorRightByWordParagraph,
+
+    // Editing.
     InsertChar(char),
     DeleteBackward,
     DeleteWord,
     DeleteForward,
-    EnterInsertMode,
-    EnterNormalMode,
 }
 
 /// Capture events from the terminal and return them into a Vector.
@@ -76,7 +83,6 @@ pub fn handle_event(
                     match input.key {
                         Key::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
                         Key::Esc => commands.push(BlinkCommand::EnterNormalMode),
-                        Key::Backspace => commands.push(BlinkCommand::DeleteBackward),
                         _ => {}
                     }
                 }

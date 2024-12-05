@@ -121,6 +121,7 @@ impl<'a> BlinkRenderer<'a> {
             let title = match self.url_input.mode {
                 VimMode::Insert => "URL [Insert]",
                 VimMode::Normal => "URL [Normal]",
+                VimMode::Visual => "URL [Visual]",
                 VimMode::Any => "URL",
             };
 
@@ -135,17 +136,6 @@ impl<'a> BlinkRenderer<'a> {
         self.url_input.text_area.set_block(block);
 
         f.render_widget(&self.url_input.text_area, area);
-
-        // if self.focus_area == FocusArea::URLInput {
-        //     // Pega a posição do cursor no TextArea
-        //     let cursor_line = self.url_input.text_area.cursor();
-        //     let cursor_col = self.url_input.text_area.cursor_col();
-
-        //     // Ajusta o cursor do terminal
-        //     let x = area.x + cursor_col as u16 + 1; // +1 por causa da borda esquerda
-        //     let y = area.y + cursor_line as u16 + 1; // +1 por causa da borda superior
-        //     f.set_cursor_position(Position::new(x, y));
-        // }
     }
 
     pub fn render_side_panel(&mut self, f: &mut Frame, area: Rect) {
@@ -184,6 +174,7 @@ impl<'a> BlinkRenderer<'a> {
             let title = match self.editor.mode {
                 VimMode::Insert => "Request body [Insert]",
                 VimMode::Normal => "Request body [Normal]",
+                VimMode::Visual => "Request body [Visual]",
                 VimMode::Any => "Request body",
             };
 

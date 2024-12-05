@@ -1,5 +1,5 @@
 use ratatui::style::Style;
-use tui_textarea::{CursorMove, Input, TextArea};
+use tui_textarea::{CursorMove, TextArea};
 use utils::VimMode;
 pub use tui_textarea;
 
@@ -7,7 +7,6 @@ pub struct URLInput<'a> {
     pub text_area: TextArea<'a>,
     pub mode: VimMode,
     pub vim_mode: bool,
-    selection_anchor: Option<(usize, usize)>, // Row and column where the selection begins.
 }
 
 impl<'a> URLInput<'a> {
@@ -26,31 +25,31 @@ impl<'a> URLInput<'a> {
             text_area,
             mode,
             vim_mode,
-            selection_anchor: None,
         }
     }
 
     pub fn enter_insert_mode(&mut self) {
         if self.vim_mode {
+            self.text_area.cancel_selection();
             self.mode = VimMode::Insert;
         }
     }
 
     pub fn enter_normal_mode(&mut self) {
         if self.vim_mode {
+            self.text_area.cancel_selection();
             self.mode = VimMode::Normal;
         }
     }
 
-    /// Envia um evento de entrada para o TextArea. Se o texto mudar, retorna true.
-    pub fn input(&mut self, input: Input) -> bool {
-        let changed = self.text_area.input(input);
-        // Aqui você pode adicionar validação ou estilo condicional
-        changed
+    pub fn enter_visual_mode(&mut self) {
+        if self.vim_mode {
+            self.mode = VimMode::Visual;
+            self.text_area.start_selection();
+        }
     }
 
     fn clear_selection(&mut self) {
-        self.selection_anchor = None;
         self.text_area.cancel_selection();
     }
 
@@ -60,7 +59,9 @@ impl<'a> URLInput<'a> {
 
 
     pub fn move_cursor_left(&mut self) {
-        self.clear_selection();
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
         self.text_area.move_cursor(CursorMove::Back);
     }
 
@@ -72,8 +73,24 @@ impl<'a> URLInput<'a> {
         self.text_area.move_cursor(CursorMove::Back);
     }
 
+    pub fn move_cursor_left_by_word(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordBack);
+    }
+
+    pub fn move_cursor_left_by_word_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphBack);
+    }
+
     pub fn move_cursor_right(&mut self) {
-        self.clear_selection();
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
         self.text_area.move_cursor(CursorMove::Forward);
     }
 
@@ -85,12 +102,25 @@ impl<'a> URLInput<'a> {
         self.text_area.move_cursor(CursorMove::Forward);
     }
 
-    pub fn move_cursor_right_by_word_end(&mut self) {
-        self.text_area.move_cursor(CursorMove::WordEnd)
+    pub fn move_cursor_right_by_word(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordForward)
     }
 
-    pub fn move_cursor_right_by_word(&mut self) {
-        self.text_area.move_cursor(CursorMove::WordForward)
+    pub fn move_cursor_right_by_word_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphForward)
+    }
+
+    pub fn move_cursor_right_by_word_end(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordEnd)
     }
 
     //
@@ -102,10 +132,10 @@ impl<'a> URLInput<'a> {
     }
 
     pub fn delete_char(&mut self) {
-        let _ = self.text_area.delete_next_char(); // We don't really care about the bool value here.
+        let _ = self.text_area.delete_next_char();
     }
 
     pub fn backspace(&mut self) {
-        let _ = self.text_area.delete_char(); // We don't really care about the bool value here.
+        let _ = self.text_area.delete_char();
     }
 }
