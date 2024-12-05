@@ -49,10 +49,9 @@ impl KeybindingMap {
     pub fn get_command(&self, input: Input, current_mode: VimMode) -> Option<BlinkCommand> {
         if let Some(bindings) = self.bindings.get(&input) {
             // Check all the bindings for the key and returns the first that matches the current mode.
-            // The logic here is quite simple: if we found a corresponding or `Any`, return it.
+            // The logic here is quite simple: if we found a corresponding or `Insert`, return it.
             for (cmd, binding_mode) in bindings {
                 match binding_mode {
-                    VimMode::Any => return Some(*cmd),
                     VimMode::Normal if current_mode == VimMode::Normal => return Some(*cmd),
                     VimMode::Visual if current_mode == VimMode::Visual => return Some(*cmd),
                     VimMode::Insert if current_mode == VimMode::Insert => return Some(*cmd),
@@ -66,40 +65,51 @@ impl KeybindingMap {
     pub fn default_keybindings() -> Self {
         let mut map = KeybindingMap::new();
 
-        map.add_binding(input!(Key::Char('b'), true, false, false), BlinkCommand::MoveCursorLeft, VimMode::Any);
-        map.add_binding(input!(Key::Char('b'), false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
-        map.add_binding(input!(Key::Char('B'), false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Char('b'), true, false, false), BlinkCommand::MoveCursorLeft, VimMode::Insert);
+        map.add_binding(input!(Key::Char('b'), false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Char('B'), false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Char('f'), true, false, false), BlinkCommand::MoveCursorRight, VimMode::Any);
-        map.add_binding(input!(Key::Char('f'), false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
-        map.add_binding(input!(Key::Char('F'), false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Char('f'), true, false, false), BlinkCommand::MoveCursorRight, VimMode::Insert);
+        map.add_binding(input!(Key::Char('f'), false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Char('F'), false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Char('q'), true, false, false), BlinkCommand::Quit, VimMode::Any);
-        map.add_binding(input!(Key::Tab), BlinkCommand::ToggleFocus, VimMode::Any);
+        map.add_binding(input!(Key::Char('q'), true, false, false), BlinkCommand::Quit, VimMode::Insert);
+        map.add_binding(input!(Key::Tab), BlinkCommand::ToggleFocus, VimMode::Insert);
+        map.add_binding(input!(Key::Tab), BlinkCommand::ToggleFocus, VimMode::Normal);
 
-        map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Any);
-        map.add_binding(input!(Key::Char('p'), true, false, false), BlinkCommand::MoveCursorUp, VimMode::Any);
+        map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Insert);
+        map.add_binding(input!(Key::Char('p'), true, false, false), BlinkCommand::MoveCursorUp, VimMode::Insert);
+        map.add_binding(input!(Key::Char('p'), true, false, true), BlinkCommand::MoveCursorUpSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Any);
-        map.add_binding(input!(Key::Char('n'), true, false, false), BlinkCommand::MoveCursorDown, VimMode::Any);
+        map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Insert);
+        map.add_binding(input!(Key::Char('n'), true, false, false), BlinkCommand::MoveCursorDown, VimMode::Insert);
+        map.add_binding(input!(Key::Char('n'), true, false, true), BlinkCommand::MoveCursorDownSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Left), BlinkCommand::MoveCursorLeft, VimMode::Any);
-        map.add_binding(input!(Key::Left, false, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Any);
-        map.add_binding(input!(Key::Left, true, false, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
-        map.add_binding(input!(Key::Left, false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
-        map.add_binding(input!(Key::Left, true, false, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
-        map.add_binding(input!(Key::Left, false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Left), BlinkCommand::MoveCursorLeft, VimMode::Insert);
+        map.add_binding(input!(Key::Left, false, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Left, true, false, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Left, false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Left, true, false, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Left, false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Right), BlinkCommand::MoveCursorRight, VimMode::Any);
-        map.add_binding(input!(Key::Right, false, false, true), BlinkCommand::MoveCursorRightSelecting, VimMode::Any);
-        map.add_binding(input!(Key::Right, true, false, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
-        map.add_binding(input!(Key::Right, false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
-        map.add_binding(input!(Key::Right, true, false, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
-        map.add_binding(input!(Key::Right, false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Right), BlinkCommand::MoveCursorRight, VimMode::Insert);
+        map.add_binding(input!(Key::Right, false, false, true), BlinkCommand::MoveCursorRightSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Right, true, false, false), BlinkCommand::MoveCursorRightByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Right, false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Insert);
+        map.add_binding(input!(Key::Right, true, false, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Insert);
+        map.add_binding(input!(Key::Right, false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Insert);
 
-        map.add_binding(input!(Key::Backspace), BlinkCommand::DeleteBackward, VimMode::Any);
-        map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWord, VimMode::Any);
-        map.add_binding(input!(Key::Delete), BlinkCommand::DeleteForward, VimMode::Normal);
+        map.add_binding(input!(Key::Up), BlinkCommand::MoveCursorUp, VimMode::Insert);
+        map.add_binding(input!(Key::Up, false, false, true), BlinkCommand::MoveCursorUpSelecting, VimMode::Insert);
+
+        map.add_binding(input!(Key::Down), BlinkCommand::MoveCursorDown, VimMode::Insert);
+        map.add_binding(input!(Key::Down, false, false, true), BlinkCommand::MoveCursorDownSelecting, VimMode::Insert);
+
+        map.add_binding(input!(Key::Backspace), BlinkCommand::DeleteBackward, VimMode::Insert);
+        map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWord, VimMode::Insert);
+        map.add_binding(input!(Key::Delete), BlinkCommand::DeleteForward, VimMode::Insert);
+
+        map.add_binding(input!(Key::Enter), BlinkCommand::Enter, VimMode::Insert);
 
         //
         // Normal mode bindings.
@@ -169,7 +179,7 @@ pub fn parse_mode(s: &str) -> VimMode {
     match s.to_lowercase().as_str() {
         "normal" => VimMode::Normal,
         "insert" => VimMode::Insert,
-        _ => VimMode::Any,
+        _ => VimMode::Insert,
     }
 }
 

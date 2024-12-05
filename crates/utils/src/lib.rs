@@ -27,7 +27,6 @@ pub use log::{debug, error, info, warn};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VimMode {
     Normal,
-    Insert,
+    Insert, // Insert mode is the default when there vim_mode is false.
     Visual,
-    Any // This represents that vim_mode is not currently active. It kinda works like Any to be honest.
 }

@@ -10,4 +10,3 @@ crossterm = "0.28.1"
 anyhow = { workspace = true }
 config = { path = "../config" }
 utils = { path = "../utils" }
-ropey = "1.6.1"

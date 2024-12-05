@@ -22,10 +22,14 @@ pub enum BlinkCommand {
     EnterInsertMode,
     EnterVisualMode,
     EnterNormalMode,
+    Enter,
 
     // Movement.
     MoveCursorUp,
+    MoveCursorUpSelecting,
+
     MoveCursorDown,
+    MoveCursorDownSelecting,
 
     MoveCursorLeft,
     MoveCursorLeftSelecting,
@@ -81,9 +85,9 @@ pub fn handle_event(
                 // Found a command whose mode is matched with the current one.
                 commands.push(command);
             } else {
-                // If we haven't found anything, and we are in `Insert`/`Any`, we can
+                // If we haven't found anything, and we are in `Insert`, we can
                 // handle it directly.
-                if *editor_mode == VimMode::Insert || *editor_mode == VimMode::Any {
+                if *editor_mode == VimMode::Insert {
                     match input.key {
                         Key::Char(c) => commands.push(BlinkCommand::InsertChar(c)),
                         Key::Esc => commands.push(BlinkCommand::EnterNormalMode),

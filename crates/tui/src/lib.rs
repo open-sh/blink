@@ -2,9 +2,9 @@ use anyhow::{Context, Result};
 use config::HTTPRequest;
 use editor::Editor;
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Position, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState},
     DefaultTerminal, Frame,
 };
 use side_panel::SidePanel;
@@ -21,7 +21,7 @@ pub mod url_input;
 pub struct BlinkRenderer<'a> {
     pub focus_area: FocusArea,
     pub url_input: URLInput<'a>,
-    pub editor: Editor,
+    pub editor: Editor<'a>,
     pub side_panel: SidePanel,
     pub vim_mode: bool,
 }
@@ -122,7 +122,6 @@ impl<'a> BlinkRenderer<'a> {
                 VimMode::Insert => "URL [Insert]",
                 VimMode::Normal => "URL [Normal]",
                 VimMode::Visual => "URL [Visual]",
-                VimMode::Any => "URL",
             };
 
             Block::default()
@@ -175,7 +174,6 @@ impl<'a> BlinkRenderer<'a> {
                 VimMode::Insert => "Request body [Insert]",
                 VimMode::Normal => "Request body [Normal]",
                 VimMode::Visual => "Request body [Visual]",
-                VimMode::Any => "Request body",
             };
 
             Block::default()
@@ -186,19 +184,8 @@ impl<'a> BlinkRenderer<'a> {
             Block::default().borders(Borders::ALL).title("Request body")
         };
 
-        let text: String = self.editor.content.to_string();
-        let paragraph = Paragraph::new(text).block(block);
+        self.editor.text_area.set_block(block);
 
-        f.render_widget(paragraph, area);
-
-        if self.focus_area == FocusArea::Editor {
-            let x_offset = self.editor.cursor_x as u16;
-            let y_offset = self.editor.cursor_y as u16;
-
-            let x = area.x + x_offset + 1; // +1 for left border.
-            let y = area.y + y_offset + 1; // +1 for right border.
-
-            f.set_cursor_position(Position::new(x, y));
-        }
+        f.render_widget(&self.editor.text_area, area);
     }
 }

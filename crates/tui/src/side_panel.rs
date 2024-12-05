@@ -10,7 +10,11 @@ pub struct SidePanel {
 
 impl SidePanel {
     pub fn new(requests: Vec<HTTPRequest>, vim_mode: bool) -> Self {
-        let mode = if vim_mode { VimMode::Normal } else { VimMode::Any };
+        let mode = if vim_mode {
+            VimMode::Normal
+        } else {
+            VimMode::Insert
+        };
 
         SidePanel {
             requests,

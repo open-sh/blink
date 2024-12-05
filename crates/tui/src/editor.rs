@@ -1,22 +1,26 @@
-use ropey::Rope;
+use ratatui::style::Style;
+use tui_textarea::{CursorMove, TextArea};
 use utils::VimMode;
 
-pub struct Editor {
-    pub content: Rope,
-    pub cursor_x: usize,
-    pub cursor_y: usize,
+pub struct Editor<'a> {
+    pub text_area: TextArea<'a>,
     pub mode: VimMode,
     pub vim_mode: bool,
 }
 
-impl Editor {
+impl<'a> Editor<'a> {
     pub fn new(vim_mode: bool) -> Self {
-        let mode = if vim_mode { VimMode::Normal } else { VimMode::Any };
+        let mode = if vim_mode {
+            VimMode::Normal
+        } else {
+            VimMode::Insert
+        };
+
+        let mut text_area = TextArea::default();
+        text_area.set_cursor_line_style(Style::default());
 
         Self {
-            content: Rope::new(),
-            cursor_x: 0,
-            cursor_y: 0,
+            text_area,
             mode,
             vim_mode,
         }
@@ -37,103 +41,144 @@ impl Editor {
     pub fn enter_visual_mode(&mut self) {
         if self.vim_mode {
             self.mode = VimMode::Visual;
+            self.text_area.start_selection();
         }
     }
 
-    pub fn insert_char(&mut self, c: char) {
-        // Gotta make sure that `cursor_y` does not go beyond the number of existing lines.
-        // If `cursor_y == self.content.len_lines()`, for instance, just insert a newline:
-        while self.cursor_y >= self.content.len_lines() {
-            self.content.insert_char(self.content.len_chars(), '\n');
-        }
-
-        let line_start = self.content.line_to_char(self.cursor_y);
-        let char_offset = line_start + self.cursor_x;
-
-        self.content.insert_char(char_offset, c);
-        self.cursor_x += 1;
+    fn clear_selection(&mut self) {
+        self.text_area.cancel_selection();
     }
 
-    pub fn delete_char(&mut self) {
-        if self.cursor_y < self.content.len_lines() {
-            let line_len = self.content.line(self.cursor_y).len_chars();
-            if self.cursor_x < line_len {
-                let line_start = self.content.line_to_char(self.cursor_y);
-                let char_offset = line_start + self.cursor_x;
-                self.content.remove(char_offset..char_offset + 1);
-            }
-        }
-    }
-
-    pub fn backspace(&mut self) {
-        if self.mode == VimMode::Insert {
-            if self.cursor_y < self.content.len_lines() {
-                if self.cursor_x > 0 {
-                    // Remove char previous to cursor.
-                    let line_start = self.content.line_to_char(self.cursor_y);
-                    let char_offset = line_start + self.cursor_x - 1;
-                    self.content.remove(char_offset..char_offset + 1);
-                    self.cursor_x -= 1;
-                } else if self.cursor_y > 0 {
-                    // If cursor_x == 0, we need to join lines with the previous,
-                    // if it is the desired behavior. We'll leave like this for simplicity.
-                    self.cursor_y -= 1;
-                    let line_len = self.content.line(self.cursor_y).len_chars();
-                    let line_start = self.content.line_to_char(self.cursor_y);
-                    let char_offset = line_start + line_len.saturating_sub(1);
-                    if line_len > 0 {
-                        self.content.remove(char_offset..char_offset + 1);
-                        self.cursor_x = self.content.line(self.cursor_y).len_chars();
-                    } else {
-                        // Previous line is empty, nothing to delete.
-                        self.cursor_x = 0;
-                    }
-                }
-            }
-        }
-    }
+    //
+    // Movement
+    //
 
     pub fn move_cursor_left(&mut self) {
-        if self.cursor_y < self.content.len_lines() {
-            if self.cursor_x > 0 {
-                self.cursor_x -= 1;
-            } else if self.cursor_y > 0 {
-                self.cursor_y -= 1;
-                let line_len = self.content.line(self.cursor_y).len_chars();
-                self.cursor_x = line_len;
-            }
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
         }
+        self.text_area.move_cursor(CursorMove::Back);
+    }
+
+    pub fn move_cursor_left_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::Back);
+    }
+
+    pub fn move_cursor_left_by_word(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordBack);
+    }
+
+    pub fn move_cursor_left_by_word_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordBack);
+    }
+
+    pub fn move_cursor_left_by_word_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphBack);
     }
 
     pub fn move_cursor_right(&mut self) {
-        if self.cursor_y < self.content.len_lines() {
-            let line_len = self.content.line(self.cursor_y).len_chars();
-            if self.cursor_x < line_len {
-                self.cursor_x += 1;
-            } else if self.cursor_y + 1 < self.content.len_lines() {
-                self.cursor_y += 1;
-                self.cursor_x = 0;
-            }
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
         }
+        self.text_area.move_cursor(CursorMove::Forward);
+    }
+
+    pub fn move_cursor_right_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::Forward);
+    }
+
+    pub fn move_cursor_right_by_word(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordForward)
+    }
+
+    pub fn move_cursor_right_by_word_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::WordForward);
+    }
+
+    pub fn move_cursor_right_by_word_paragraph(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::ParagraphForward)
+    }
+
+    pub fn move_cursor_right_by_word_end(&mut self) {
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
+        }
+        self.text_area.move_cursor(CursorMove::WordEnd)
     }
 
     pub fn move_cursor_up(&mut self) {
-        if self.cursor_y > 0 {
-            self.cursor_y -= 1;
-            let line_len = self.content.line(self.cursor_y).len_chars();
-            if self.cursor_x > line_len {
-                self.cursor_x = line_len;
-            }
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
         }
+        self.text_area.move_cursor(CursorMove::Up)
+    }
+
+    pub fn move_cursor_up_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+        self.text_area.move_cursor(CursorMove::Up)
     }
 
     pub fn move_cursor_down(&mut self) {
-        if self.cursor_y + 1 < self.content.len_lines() {
-            self.cursor_y += 1;
-            let line_len = self.content.line(self.cursor_y).len_chars();
-            if self.cursor_x > line_len {
-                self.cursor_x = line_len;
-            }
+        if self.mode != VimMode::Visual {
+            self.clear_selection();
         }
+        self.text_area.move_cursor(CursorMove::Down)
+    }
+
+    pub fn move_cursor_down_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+        self.text_area.move_cursor(CursorMove::Down)
+    }
+
+    //
+    // Editing
+    //
+
+    pub fn insert_char(&mut self, c: char) {
+        self.text_area.insert_char(c)
+    }
+
+    /// NOTE: This deletes forward.
+    pub fn delete_char(&mut self) {
+        _ = self.text_area.delete_next_char();
+    }
+
+    pub fn delete_word(&mut self) {
+        let _ = self.text_area.delete_word(); // We don't really care about the bool value here.
+    }
+
+    pub fn backspace(&mut self) {
+        let _ = self.text_area.delete_char();
     }
 }

@@ -14,7 +14,7 @@ impl<'a> URLInput<'a> {
         let mode = if vim_mode {
             VimMode::Normal
         } else {
-            VimMode::Any
+            VimMode::Insert
         };
         let mut text_area = TextArea::default();
         text_area.set_cursor_line_style(Style::default());
@@ -147,11 +147,16 @@ impl<'a> URLInput<'a> {
         let _ = self.text_area.delete_word(); // We don't really care about the bool value here.
     }
 
+    /// NOTE: This deletes forward.
     pub fn delete_char(&mut self) {
         let _ = self.text_area.delete_next_char();
     }
 
     pub fn backspace(&mut self) {
         let _ = self.text_area.delete_char();
+    }
+
+    pub fn insert_char(&mut self, c: char) {
+        self.text_area.insert_char(c);
     }
 }

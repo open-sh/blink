@@ -116,10 +116,17 @@ impl<'a> BlinkState<'a> {
                 match command {
                     BlinkCommand::Quit => self.should_quit = true,
                     BlinkCommand::ToggleFocus => self.toggle_focus(),
+                    BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
+                    BlinkCommand::EnterVisualMode => self.enter_visual_mode(),
+                    BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
+                    BlinkCommand::Enter => self.enter(),
 
                     // Movement.
                     BlinkCommand::MoveCursorUp => self.move_cursor_up(),
+                    BlinkCommand::MoveCursorUpSelecting => self.move_cursor_up_selecting(),
+
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
+                    BlinkCommand::MoveCursorDownSelecting => self.move_cursor_down_selecting(),
 
                     BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
                     BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
@@ -139,9 +146,6 @@ impl<'a> BlinkState<'a> {
                     BlinkCommand::DeleteBackward => self.backspace(),
                     BlinkCommand::DeleteForward => self.delete_char(),
                     BlinkCommand::DeleteWord => self.delete_word(),
-                    BlinkCommand::EnterInsertMode => self.enter_insert_mode(),
-                    BlinkCommand::EnterVisualMode => self.enter_visual_mode(),
-                    BlinkCommand::EnterNormalMode => self.enter_normal_mode(),
                 }
             }
         }
@@ -233,10 +237,24 @@ impl<'a> BlinkState<'a> {
         }
     }
 
+    fn move_cursor_up_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::Editor => self.renderer.editor.move_cursor_up_selecting(),
+            _ => {}
+        }
+    }
+
     fn move_cursor_down(&mut self) {
         match self.renderer.focus_area {
             FocusArea::SidePanel => self.renderer.side_panel.move_cursor_down(),
             FocusArea::Editor => self.renderer.editor.move_cursor_down(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_down_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::Editor => self.renderer.editor.move_cursor_down_selecting(),
             _ => {}
         }
     }
@@ -252,6 +270,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_left_selecting(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left_selecting(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_left_selecting(),
             _ => {}
         }
     }
@@ -259,6 +278,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_left_by_word(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_left_by_word(),
             _ => {}
         }
     }
@@ -266,6 +286,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_left_by_word_selecting(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word_selecting(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_left_by_word_selecting(),
             _ => {}
         }
     }
@@ -273,6 +294,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_left_by_word_paragraph(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word_paragraph(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_left_by_word_paragraph(),
             _ => {}
         }
     }
@@ -288,6 +310,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_selecting(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_selecting(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right_selecting(),
             _ => {}
         }
     }
@@ -295,6 +318,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word(),
             _ => {}
         }
     }
@@ -302,6 +326,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word_selecting(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_selecting(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word_selecting(),
             _ => {}
         }
     }
@@ -309,6 +334,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word_paragraph(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_paragraph(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word_paragraph(),
             _ => {}
         }
     }
@@ -316,6 +342,7 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word_end(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_end(),
+            FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word_end(),
             _ => {}
         }
     }
@@ -326,7 +353,7 @@ impl<'a> BlinkState<'a> {
 
     fn insert_char(&mut self, c: char) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => self.renderer.url_input.text_area.insert_char(c),
+            FocusArea::URLInput => self.renderer.url_input.insert_char(c),
             FocusArea::Editor => self.renderer.editor.insert_char(c),
             _ => {}
         }
@@ -335,7 +362,7 @@ impl<'a> BlinkState<'a> {
     fn backspace(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.backspace(),
-            // FocusArea::Editor => self.renderer.editor.backspace(),
+            FocusArea::Editor => self.renderer.editor.backspace(),
             _ => { }
         }
     }
@@ -351,7 +378,7 @@ impl<'a> BlinkState<'a> {
     fn delete_word(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.delete_word(),
-            FocusArea::Editor => { /* TODO */ }
+            FocusArea::Editor => self.renderer.editor.delete_word(),
             _ => {}
         }
     }
@@ -359,6 +386,13 @@ impl<'a> BlinkState<'a> {
     //
     // State handling.
     //
+    fn enter(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => { /* TODO */}
+            FocusArea::Editor => self.renderer.editor.insert_char('\n'),
+            _ => {}
+        }
+    }
 
     fn enter_insert_mode(&mut self) {
         match self.renderer.focus_area {
