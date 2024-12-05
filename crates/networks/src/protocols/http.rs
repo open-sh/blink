@@ -1,3 +1,6 @@
+// TODO: Add others http methods
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+
 use crate::NetworkManager;
 use anyhow::Result;
 use reqwest::Client;
@@ -30,19 +33,24 @@ impl NetworkManager for HttpClient {
         procedure: &str,
         _request: &Self::RpcRequest,
     ) -> Result<Self::RpcResponse, String> {
-        let url = format!("{}/{}", self.base_url, procedure);
+        match procedure {
+            "http-get-rpc" => {
+                let url = format!("{}/{}", self.base_url, procedure);
 
-        let res = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .text()
-            .await
-            .map_err(|e| e.to_string())?;
+                let res = self
+                    .client
+                    .get(&url)
+                    .send()
+                    .await
+                    .map_err(|e| e.to_string())?
+                    .text()
+                    .await
+                    .map_err(|e| e.to_string())?;
 
-        Ok(res)
+                Ok(res)
+            }
+            _ => Err("Unsupported procedure".to_string()),
+        }
     }
 
     fn is_connection_oriented(&self) -> bool {

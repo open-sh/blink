@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     client.initialize();
 
     let request = String::new();
-    let response = client.call_procedure("mock_rpc", &request).await;
+    let response = client.call_procedure("http-get-rpc", &request).await;
     println!("Received response: {:?}", response);
 
     client.close_connection();

@@ -1,3 +1,5 @@
+// TODO: build like zig, like a graph with all the protocols
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +23,10 @@ pub trait NetworkManager {
 
     fn initialize(&mut self) -> Self::State;
 
+    /// WARNING: For code style and standardization, the format for writing an RPC procedure name must follow this pattern: `protocol-action-rpc`.
+    /// Examples: `http-get-rpc`, `icpm-ping-rpc`
+
+    // TODO: Resolve this warning
     async fn call_procedure(
         &mut self,
         procedure_name: &str,
