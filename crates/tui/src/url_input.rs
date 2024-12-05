@@ -80,6 +80,14 @@ impl<'a> URLInput<'a> {
         self.text_area.move_cursor(CursorMove::WordBack);
     }
 
+    pub fn move_cursor_left_by_word_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::WordBack);
+    }
+
     pub fn move_cursor_left_by_word_paragraph(&mut self) {
         if self.mode != VimMode::Visual {
             self.clear_selection();
@@ -107,6 +115,14 @@ impl<'a> URLInput<'a> {
             self.clear_selection();
         }
         self.text_area.move_cursor(CursorMove::WordForward)
+    }
+
+    pub fn move_cursor_right_by_word_selecting(&mut self) {
+        if !self.text_area.is_selecting() {
+            self.text_area.start_selection();
+        }
+
+        self.text_area.move_cursor(CursorMove::WordForward);
     }
 
     pub fn move_cursor_right_by_word_paragraph(&mut self) {

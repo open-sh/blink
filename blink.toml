@@ -6,7 +6,7 @@
 message = "hi from the config"
 
 # Vim mode is optional.
-vim_mode = true # For xaxau - https://github.com/lucaoshow (haha, pussy).
+vim_mode = false # For xaxau - https://github.com/lucaoshow (haha, pussy).
 
 [local_requests]
 requests = [

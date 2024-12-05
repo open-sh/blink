@@ -120,13 +120,17 @@ impl<'a> BlinkState<'a> {
                     // Movement.
                     BlinkCommand::MoveCursorUp => self.move_cursor_up(),
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
+
                     BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
                     BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
                     BlinkCommand::MoveCursorLeftByWord => self.move_cursor_left_by_word(),
+                    BlinkCommand::MoveCursorLeftByWordSelecting => self.move_cursor_left_by_word_selecting(),
                     BlinkCommand::MoveCursorLeftByWordParagraph => self.move_cursor_left_by_word_paragraph(),
+
                     BlinkCommand::MoveCursorRight => self.move_cursor_right(),
                     BlinkCommand::MoveCursorRightSelecting => self.move_cursor_right_selecting(),
                     BlinkCommand::MoveCursorRightByWord => self.move_cursor_right_by_word(),
+                    BlinkCommand::MoveCursorRightByWordSelecting => self.move_cursor_right_by_word_selecting(),
                     BlinkCommand::MoveCursorRightByWordParagraph => self.move_cursor_right_by_word_paragraph(),
                     BlinkCommand::MoveCursorRightByWordEnd => self.move_cursor_right_by_word_end(),
 
@@ -259,6 +263,13 @@ impl<'a> BlinkState<'a> {
         }
     }
 
+    fn move_cursor_left_by_word_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word_selecting(),
+            _ => {}
+        }
+    }
+
     fn move_cursor_left_by_word_paragraph(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_left_by_word_paragraph(),
@@ -284,6 +295,13 @@ impl<'a> BlinkState<'a> {
     fn move_cursor_right_by_word(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word(),
+            _ => {}
+        }
+    }
+
+    fn move_cursor_right_by_word_selecting(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_selecting(),
             _ => {}
         }
     }

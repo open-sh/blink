@@ -26,13 +26,17 @@ pub enum BlinkCommand {
     // Movement.
     MoveCursorUp,
     MoveCursorDown,
+
     MoveCursorLeft,
     MoveCursorLeftSelecting,
     MoveCursorLeftByWord,
+    MoveCursorLeftByWordSelecting,
     MoveCursorLeftByWordParagraph,
+
     MoveCursorRight,
     MoveCursorRightSelecting,
     MoveCursorRightByWord,
+    MoveCursorRightByWordSelecting,
     MoveCursorRightByWordEnd,
     MoveCursorRightByWordParagraph,
 

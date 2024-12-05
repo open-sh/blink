@@ -48,9 +48,8 @@ impl KeybindingMap {
 
     pub fn get_command(&self, input: Input, current_mode: VimMode) -> Option<BlinkCommand> {
         if let Some(bindings) = self.bindings.get(&input) {
-            // Verifica todos os bindings para essa tecla e retorna o primeiro que bater com o modo atual.
-            // Aqui a lógica é simples: se encontrar um correspondente ao modo exato ou Any, retorna.
-            // Se quiser priorizar certos modos, basta alterar a ordem ou lógica.
+            // Check all the bindings for the key and returns the first that matches the current mode.
+            // The logic here is quite simple: if we found a corresponding or `Any`, return it.
             for (cmd, binding_mode) in bindings {
                 match binding_mode {
                     VimMode::Any => return Some(*cmd),
@@ -68,11 +67,12 @@ impl KeybindingMap {
         let mut map = KeybindingMap::new();
 
         map.add_binding(input!(Key::Char('b'), true, false, false), BlinkCommand::MoveCursorLeft, VimMode::Any);
-        map.add_binding(input!(Key::Char('b'), true, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Any);
         map.add_binding(input!(Key::Char('b'), false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
+        map.add_binding(input!(Key::Char('B'), false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
 
         map.add_binding(input!(Key::Char('f'), true, false, false), BlinkCommand::MoveCursorRight, VimMode::Any);
         map.add_binding(input!(Key::Char('f'), false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
+        map.add_binding(input!(Key::Char('F'), false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
 
         map.add_binding(input!(Key::Char('q'), true, false, false), BlinkCommand::Quit, VimMode::Any);
         map.add_binding(input!(Key::Tab), BlinkCommand::ToggleFocus, VimMode::Any);
@@ -86,10 +86,16 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Left), BlinkCommand::MoveCursorLeft, VimMode::Any);
         map.add_binding(input!(Key::Left, false, false, true), BlinkCommand::MoveCursorLeftSelecting, VimMode::Any);
         map.add_binding(input!(Key::Left, true, false, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
+        map.add_binding(input!(Key::Left, false, true, false), BlinkCommand::MoveCursorLeftByWord, VimMode::Any);
+        map.add_binding(input!(Key::Left, true, false, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Left, false, true, true), BlinkCommand::MoveCursorLeftByWordSelecting, VimMode::Any);
 
         map.add_binding(input!(Key::Right), BlinkCommand::MoveCursorRight, VimMode::Any);
         map.add_binding(input!(Key::Right, false, false, true), BlinkCommand::MoveCursorRightSelecting, VimMode::Any);
         map.add_binding(input!(Key::Right, true, false, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
+        map.add_binding(input!(Key::Right, false, true, false), BlinkCommand::MoveCursorRightByWord, VimMode::Any);
+        map.add_binding(input!(Key::Right, true, false, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
+        map.add_binding(input!(Key::Right, false, true, true), BlinkCommand::MoveCursorRightByWordSelecting, VimMode::Any);
 
         map.add_binding(input!(Key::Backspace), BlinkCommand::DeleteBackward, VimMode::Any);
         map.add_binding(input!(Key::Backspace, false, true, false), BlinkCommand::DeleteWord, VimMode::Any);
@@ -115,6 +121,8 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Char('v')), BlinkCommand::EnterVisualMode, VimMode::Normal);
 
         map.add_binding(input!(Key::Char('x')), BlinkCommand::DeleteForward, VimMode::Normal);
+
+        map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Normal);
 
         //
         // Insert mode bindings.
@@ -200,21 +208,34 @@ fn parse_key(binding: &KeybindingConfig) -> Result<Input> {
     })
 }
 
+/// NOTE: Maybe automate this?
 fn parse_blink_command(cmd: &str) -> Result<BlinkCommand> {
     match cmd.to_lowercase().as_str() {
         "quit" => Ok(BlinkCommand::Quit),
         "togglefocus" => Ok(BlinkCommand::ToggleFocus),
+        "enterinsertmode" => Ok(BlinkCommand::EnterInsertMode),
+        "entervisualmode" => Ok(BlinkCommand::EnterVisualMode),
+        "enternormalmode" => Ok(BlinkCommand::EnterNormalMode),
+
         "movecursorup" => Ok(BlinkCommand::MoveCursorUp),
         "movecursordown" => Ok(BlinkCommand::MoveCursorDown),
+
         "movecursorleft" => Ok(BlinkCommand::MoveCursorLeft),
         "movecursorleftselecting" => Ok(BlinkCommand::MoveCursorLeftSelecting),
+        "movecursorleftbyword" => Ok(BlinkCommand::MoveCursorLeftByWord),
+        "movecursorleftbywordselecting" => Ok(BlinkCommand::MoveCursorLeftByWordSelecting),
+        "movecursorleftbywordparagraph" => Ok(BlinkCommand::MoveCursorLeftByWordParagraph),
+
         "movecursorright" => Ok(BlinkCommand::MoveCursorRight),
+        "movecursorrightselecting" => Ok(BlinkCommand::MoveCursorRightSelecting),
+        "movecursorrightbyword" => Ok(BlinkCommand::MoveCursorRightByWord),
+        "movecursorrightbywordselecting" => Ok(BlinkCommand::MoveCursorRightByWordSelecting),
+        "movecursorrightbywordend" => Ok(BlinkCommand::MoveCursorRightByWordEnd),
+        "movecursorrightbywordparagraph" => Ok(BlinkCommand::MoveCursorRightByWordParagraph),
+
         "deletebackward" => Ok(BlinkCommand::DeleteBackward),
         "deleteforward" => Ok(BlinkCommand::DeleteForward),
-        "enterinsertmode" => Ok(BlinkCommand::EnterInsertMode),
-        "enternormalmode" => Ok(BlinkCommand::EnterNormalMode),
-        "movecursorleftbyword" => Ok(BlinkCommand::MoveCursorLeftByWord),
-        "movecursorrightbyword" => Ok(BlinkCommand::MoveCursorRightByWord),
+        "deleteword" => Ok(BlinkCommand::DeleteWord),
         _ => Err(anyhow!("Unknown BlinkCommand: {}", cmd)),
     }
 }
