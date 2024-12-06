@@ -1,4 +1,3 @@
-// TODO: Add Clap for the cli of this project.
 use anyhow::Result;
 use clap::Parser;
 use cli::CLI;
