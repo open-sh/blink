@@ -57,18 +57,25 @@ pub enum BlinkCommand {
 
     // Editing.
     InsertChar(char),
+
     DeleteBackward,
     DeleteWordBack,
     DeleteForward,
     DeleteUntilEOL,
     DeleteUntilHOL,
     DeleteWordForward,
+
+    Newline,
+    NewlineUp,
+
     Undo,
     Redo,
 
     Copy,
     Paste,
     Cut,
+    CutIntoInsertMode,
+    DeleteUntilEOLIntoInsertMode,
 }
 
 /// Capture events from the terminal and return them into a Vector.

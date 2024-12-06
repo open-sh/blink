@@ -173,6 +173,17 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Char('0')), BlinkCommand::MoveCusorBOL, VimMode::Normal);
         map.add_binding(input!(Key::Char('I'), false, false, true), BlinkCommand::MoveCusorBOLIntoInsertMode, VimMode::Normal);
 
+        map.add_binding(input!(Key::Char('D'), false, false, true), BlinkCommand::DeleteUntilEOL, VimMode::Normal);
+        map.add_binding(input!(Key::Char('C'), false, false, true), BlinkCommand::DeleteUntilEOLIntoInsertMode, VimMode::Normal);
+
+        map.add_binding(input!(Key::Char('p')), BlinkCommand::Paste, VimMode::Normal);
+
+        map.add_binding(input!(Key::Char('u')), BlinkCommand::Undo, VimMode::Normal);
+        map.add_binding(input!(Key::Char('U'), false, false, true), BlinkCommand::Redo, VimMode::Normal);
+
+        map.add_binding(input!(Key::Char('o')), BlinkCommand::Newline, VimMode::Normal);
+        map.add_binding(input!(Key::Char('O'), false, false, true), BlinkCommand::NewlineUp, VimMode::Normal);
+
         map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Normal);
 
         //
@@ -193,6 +204,12 @@ impl KeybindingMap {
 
         map.add_binding(input!(Key::Char('$')), BlinkCommand::MoveCusorEOL, VimMode::Visual);
         map.add_binding(input!(Key::Char('0')), BlinkCommand::MoveCusorBOL, VimMode::Visual);
+
+        map.add_binding(input!(Key::Char('y')), BlinkCommand::Copy, VimMode::Visual);
+        map.add_binding(input!(Key::Char('d')), BlinkCommand::Cut, VimMode::Visual);
+        map.add_binding(input!(Key::Char('c')), BlinkCommand::CutIntoInsertMode, VimMode::Visual);
+        map.add_binding(input!(Key::Char('s')), BlinkCommand::CutIntoInsertMode, VimMode::Visual);
+        map.add_binding(input!(Key::Char('p')), BlinkCommand::CutIntoInsertMode, VimMode::Visual);
 
         map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Visual);
 

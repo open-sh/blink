@@ -262,6 +262,11 @@ impl<'a> Editor<'a> {
     }
 
     pub fn copy(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.text_area.copy();
+            self.mode = VimMode::Normal
+        }
+
         self.text_area.copy();
     }
 
@@ -270,6 +275,35 @@ impl<'a> Editor<'a> {
     }
 
     pub fn cut(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.move_cursor_right();
+            self.text_area.cut();
+            self.mode = VimMode::Normal
+        }
+
         self.text_area.cut();
+    }
+
+    pub fn cut_into_insert_mode(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.move_cursor_right();
+            self.text_area.cut();
+            self.mode = VimMode::Insert
+        }
+
+        self.text_area.cut();
+    }
+
+    pub fn newline(&mut self) {
+        self.move_cursor_eol();
+        self.text_area.insert_newline();
+        self.mode = VimMode::Insert;
+    }
+
+    pub fn newline_up(&mut self) {
+        self.move_cursor_bol();
+        self.text_area.insert_newline();
+        self.move_cursor_up();
+        self.mode = VimMode::Insert;
     }
 }

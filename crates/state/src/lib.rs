@@ -154,18 +154,25 @@ impl<'a> BlinkState<'a> {
 
                     // Editing
                     BlinkCommand::InsertChar(c) => self.insert_char(c),
+
                     BlinkCommand::DeleteBackward => self.backspace(),
                     BlinkCommand::DeleteForward => self.delete_char(),
                     BlinkCommand::DeleteWordBack => self.delete_word_back(),
                     BlinkCommand::DeleteWordForward => self.delete_word_forward(),
                     BlinkCommand::DeleteUntilEOL => self.delete_until_eol(),
+                    BlinkCommand::DeleteUntilEOLIntoInsertMode => self.delete_until_eol_into_insert_mode(),
                     BlinkCommand::DeleteUntilHOL => self.delete_until_hol(),
+
+                    BlinkCommand::Newline => self.newline(),
+                    BlinkCommand::NewlineUp => self.newline_up(),
+
                     BlinkCommand::Undo => self.undo(),
                     BlinkCommand::Redo => self.redo(),
 
                     BlinkCommand::Copy => self.copy(),
                     BlinkCommand::Paste => self.paste(),
                     BlinkCommand::Cut => self.cut(),
+                    BlinkCommand::CutIntoInsertMode => self.cut_into_insert_mode(),
                 }
             }
         }
@@ -507,6 +514,20 @@ impl<'a> BlinkState<'a> {
         }
     }
 
+    fn delete_until_eol_into_insert_mode(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => {
+                self.renderer.url_input.delete_until_eol();
+                self.enter_insert_mode();
+            }
+            FocusArea::Editor => {
+                self.renderer.editor.delete_until_eol();
+                self.enter_insert_mode();
+            },
+            _ => {}
+        }
+    }
+
     fn delete_until_hol(&mut self) {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.delete_until_hol(),
@@ -551,6 +572,28 @@ impl<'a> BlinkState<'a> {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.cut(),
             FocusArea::Editor => self.renderer.editor.cut(),
+            _ => {}
+        }
+    }
+
+    fn cut_into_insert_mode(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::URLInput => self.renderer.url_input.cut_into_insert_mode(),
+            FocusArea::Editor => self.renderer.editor.cut_into_insert_mode(),
+            _ => {}
+        }
+    }
+
+    fn newline(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::Editor => self.renderer.editor.newline(),
+            _ => {}
+        }
+    }
+
+    fn newline_up(&mut self) {
+        match self.renderer.focus_area {
+            FocusArea::Editor => self.renderer.editor.newline_up(),
             _ => {}
         }
     }

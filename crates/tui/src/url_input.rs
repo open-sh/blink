@@ -211,6 +211,11 @@ impl<'a> URLInput<'a> {
     }
 
     pub fn copy(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.text_area.copy();
+            self.mode = VimMode::Normal
+        }
+
         self.text_area.copy();
     }
 
@@ -219,6 +224,22 @@ impl<'a> URLInput<'a> {
     }
 
     pub fn cut(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.move_cursor_right();
+            self.text_area.cut();
+            self.mode = VimMode::Normal;
+        }
+
+        self.text_area.cut();
+    }
+
+    pub fn cut_into_insert_mode(&mut self) {
+        if self.mode == VimMode::Visual {
+            self.move_cursor_right();
+            self.text_area.cut();
+            self.mode = VimMode::Insert
+        }
+
         self.text_area.cut();
     }
 }
