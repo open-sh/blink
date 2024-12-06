@@ -8,7 +8,7 @@ use std::{
 use tui::{
     events::{handle_event, poll_events, BlinkCommand}, keys::KeybindingMap, BlinkRenderer, FocusArea
 };
-use utils::{error, info};
+use utils::{error, info, VimMode};
 
 /// Main state of the application.
 pub struct BlinkState<'a> {
@@ -604,9 +604,19 @@ impl<'a> BlinkState<'a> {
 
     fn enter(&mut self) {
         match self.renderer.focus_area {
+            FocusArea::SidePanel => {
+                let index = self.renderer.side_panel.selected_request;
+                if let Some(req) = self.renderer.side_panel.requests.clone().get(index) {
+                    self.renderer.load_request(req);
+                    self.renderer.focus_area = FocusArea::Editor;
+                }
+            }
             FocusArea::URLInput => { /* TODO */}
-            FocusArea::Editor => self.renderer.editor.insert_char('\n'),
-            _ => {}
+            FocusArea::Editor => {
+                if self.renderer.editor.mode == VimMode::Insert {
+                    self.renderer.editor.insert_char('\n')
+                }
+            },
         }
     }
 

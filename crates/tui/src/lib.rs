@@ -8,6 +8,7 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 use side_panel::SidePanel;
+use tui_textarea::TextArea;
 use url_input::URLInput;
 use utils::VimMode;
 
@@ -110,6 +111,23 @@ impl<'a> BlinkRenderer<'a> {
     pub fn update_vim_mode(&mut self, vim_mode: bool) {
         self.url_input.vim_mode = vim_mode;
         self.editor.vim_mode = vim_mode;
+    }
+
+    pub fn load_request(&mut self, req: &HTTPRequest) {
+        // Clear URL Input.
+        self.url_input.text_area = TextArea::default();
+        self.url_input.text_area.insert_str(&req.url);
+
+        // Clear Editor and insert body.
+        self.editor.text_area = TextArea::default();
+        if !req.body.is_empty() {
+            for (i, line) in req.body.lines().enumerate() {
+                if i > 0 {
+                    self.editor.text_area.insert_newline();
+                }
+                self.editor.text_area.insert_str(line);
+            }
+        }
     }
 
     //
