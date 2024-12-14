@@ -9,3 +9,4 @@ config = { path = "../config" }
 utils = { path = "../utils" }
 anyhow = { workspace = true}
 notify = "7.0.0"
+tempfile = "3.14.0"
