@@ -187,6 +187,7 @@ impl KeybindingMap {
         map.add_binding(input!(Key::Char('q')), BlinkCommand::Quit, VimMode::Normal);
 
         map.add_binding(input!(Key::Enter), BlinkCommand::Enter, VimMode::Normal);
+        map.add_binding(input!(Key::Enter, false, true, false), BlinkCommand::OpenInEditor, VimMode::Normal);
 
         //
         // Visual mode bindings.

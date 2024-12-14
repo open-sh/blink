@@ -76,6 +76,8 @@ pub enum BlinkCommand {
     Cut,
     CutIntoInsertMode,
     DeleteUntilEOLIntoInsertMode,
+
+    OpenInEditor,
 }
 
 /// Capture events from the terminal and return them into a Vector.

@@ -1,12 +1,18 @@
 use anyhow::{Context, Result};
 use config::BlinkConfig;
 use notify::{Event as NotifyEvent, RecommendedWatcher, Result as NotifyResult, Watcher};
+use tui::url_input::tui_textarea::TextArea;
+use std::io::Write;
+use std::process::Command;
 use std::{
     path::Path,
     sync::mpsc::{channel, Receiver},
 };
+use tempfile::NamedTempFile;
 use tui::{
-    events::{handle_event, poll_events, BlinkCommand}, keys::KeybindingMap, BlinkRenderer, FocusArea
+    events::{handle_event, poll_events, BlinkCommand},
+    keys::KeybindingMap,
+    BlinkRenderer, FocusArea,
 };
 use utils::{error, info, VimMode};
 
@@ -173,6 +179,12 @@ impl<'a> BlinkState<'a> {
                     BlinkCommand::Paste => self.paste(),
                     BlinkCommand::Cut => self.cut(),
                     BlinkCommand::CutIntoInsertMode => self.cut_into_insert_mode(),
+
+                    BlinkCommand::OpenInEditor => {
+                        if self.renderer.focus_area == FocusArea::Editor {
+                            self.open_in_editor()
+                        }
+                    },
                 }
             }
         }
@@ -250,6 +262,46 @@ impl<'a> BlinkState<'a> {
             FocusArea::URLInput => FocusArea::Editor,
             FocusArea::Editor => FocusArea::SidePanel,
         }
+    }
+
+    pub fn open_in_editor(&mut self) {
+        // 1 - Restore the terminal before leaving the TUI.
+        self.renderer.restore();
+
+        // Get the current content the `editor`.
+        let lines = self.renderer.editor.text_area.lines();
+        let full_text = lines.join("\n");
+
+        // Create a temp file.
+        let mut tmp = NamedTempFile::new().expect("Failed to create temp file");
+        write!(tmp, "{}", full_text).expect("Failed to write to temp file");
+        let tmp_path = tmp.path().to_path_buf(); // Cloning the path here to use after we drop `tmp`.
+
+        // Close explicitly to free the reference to the `editor`.
+        drop(tmp);
+
+        // TOOD: Put this into config or something.
+        let editor = "vim".to_string();
+
+        let status = Command::new(&editor).arg(&tmp_path).status().expect("Failed to spawn editor");
+        assert!(status.success(), "Editor exited with non-zero status. Keeping old content.");
+
+        let new_body = std::fs::read_to_string(&tmp_path).expect("Failed to read edited file");
+        // TODO?: remove_file(&tmp_path).ok() // Remove temp file.
+
+        // Update the state of the `editor`.
+        self.renderer.editor.text_area = TextArea::default();
+
+        for (i, line) in new_body.lines().enumerate() {
+            if i > 0 {
+                self.renderer.editor.text_area.insert_newline();
+            }
+            self.renderer.editor.text_area.insert_str(line);
+        }
+
+        // Initialize the TUI again.
+        let mut terminal = self.renderer.init();
+        self.renderer.draw(&mut terminal).expect("Could not initialize the terminal again after opening the editor");
     }
 
     //
@@ -380,7 +432,10 @@ impl<'a> BlinkState<'a> {
 
     fn move_cursor_right_by_word_selecting(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_selecting(),
+            FocusArea::URLInput => self
+                .renderer
+                .url_input
+                .move_cursor_right_by_word_selecting(),
             FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word_selecting(),
             _ => {}
         }
@@ -388,7 +443,10 @@ impl<'a> BlinkState<'a> {
 
     fn move_cursor_right_by_word_paragraph(&mut self) {
         match self.renderer.focus_area {
-            FocusArea::URLInput => self.renderer.url_input.move_cursor_right_by_word_paragraph(),
+            FocusArea::URLInput => self
+                .renderer
+                .url_input
+                .move_cursor_right_by_word_paragraph(),
             FocusArea::Editor => self.renderer.editor.move_cursor_right_by_word_paragraph(),
             _ => {}
         }
@@ -478,7 +536,7 @@ impl<'a> BlinkState<'a> {
         match self.renderer.focus_area {
             FocusArea::URLInput => self.renderer.url_input.backspace(),
             FocusArea::Editor => self.renderer.editor.backspace(),
-            _ => { }
+            _ => {}
         }
     }
 
@@ -523,7 +581,7 @@ impl<'a> BlinkState<'a> {
             FocusArea::Editor => {
                 self.renderer.editor.delete_until_eol();
                 self.enter_insert_mode();
-            },
+            }
             _ => {}
         }
     }
@@ -611,12 +669,12 @@ impl<'a> BlinkState<'a> {
                     self.renderer.focus_area = FocusArea::Editor;
                 }
             }
-            FocusArea::URLInput => { /* TODO */}
+            FocusArea::URLInput => { /* TODO */ }
             FocusArea::Editor => {
                 if self.renderer.editor.mode == VimMode::Insert {
                     self.renderer.editor.insert_char('\n')
                 }
-            },
+            }
         }
     }
 
