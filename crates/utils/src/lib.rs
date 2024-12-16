@@ -23,3 +23,10 @@ pub fn init_logging() -> Result<()> {
 //
 // USAGE: info!("debug ma man");
 pub use log::{debug, error, info, warn};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VimMode {
+    Normal,
+    Insert, // Insert mode is the default when there vim_mode is false.
+    Visual,
+}

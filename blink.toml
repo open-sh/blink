@@ -3,4 +3,33 @@
 # of the `BlinkConfig` struct.
 #
 # This is hot-reloadable.
-mock = "hi from the config"
+message = "hi from the config"
+
+# Vim mode is optional.
+vim_mode = true # For xaxau - https://github.com/lucaoshow (haha, pussy).
+
+[local_requests]
+requests = [
+    { name = "Get Users", url = "http://example.com/api/users", body = "", method = "GET" },
+    { name = "Create User", url = "http://example.com/api/users", body = "{ \"name\": \"John Doe\" }", method = "POST" },
+    { name = "Delete User", url = "http://example.com/api/users/1", body = "", method = "DELETE" },
+]
+
+# Example of keybinding remapping.
+#
+# NOTE: If mode is not specified, it will assume it's "any".
+# [[keybindings]]
+# key = "b"
+# modifiers = ["Control"]
+# command = "MoveCursorLeft"
+
+# [[keybindings]]
+# key = "f"
+# modifiers = ["Control"]
+# command = "MoveCursorRight"
+
+[[keybindings]]
+key = "c"
+modifiers = ["Control"]
+command = "Quit"
+mode = "insert" # Could be "normal" or "any" as well.
