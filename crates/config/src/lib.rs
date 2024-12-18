@@ -11,6 +11,7 @@ pub struct HTTPRequest {
     pub name: String,
     pub url: String,
     pub body: String,
+
     pub method: String,
 }
 

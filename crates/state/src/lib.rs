@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use config::BlinkConfig;
 use notify::{Event as NotifyEvent, RecommendedWatcher, Result as NotifyResult, Watcher};
-use tui::url_input::tui_textarea::TextArea;
 use std::io::Write;
 use std::process::Command;
 use std::{
@@ -9,6 +8,7 @@ use std::{
     sync::mpsc::{channel, Receiver},
 };
 use tempfile::NamedTempFile;
+use tui::url_input::tui_textarea::TextArea;
 use tui::{
     events::{handle_event, poll_events, BlinkCommand},
     keys::KeybindingMap,
@@ -131,31 +131,47 @@ impl<'a> BlinkState<'a> {
                     BlinkCommand::MoveCursorUp => self.move_cursor_up(),
                     BlinkCommand::MoveCursorUpParagraph => self.move_cursor_up_paragraph(),
                     BlinkCommand::MoveCursorUpSelecting => self.move_cursor_up_selecting(),
-                    BlinkCommand::MoveCursorUpParagraphSelecting => self.move_cursor_up_paragraph_selecting(),
+                    BlinkCommand::MoveCursorUpParagraphSelecting => {
+                        self.move_cursor_up_paragraph_selecting()
+                    }
 
                     BlinkCommand::MoveCursorDown => self.move_cursor_down(),
                     BlinkCommand::MoveCursorDownParagraph => self.move_cursor_down_paragraph(),
                     BlinkCommand::MoveCursorDownSelecting => self.move_cursor_down_selecting(),
-                    BlinkCommand::MoveCursorDownParagraphSelecting => self.move_cursor_down_paragraph_selecting(),
+                    BlinkCommand::MoveCursorDownParagraphSelecting => {
+                        self.move_cursor_down_paragraph_selecting()
+                    }
 
                     BlinkCommand::MoveCursorLeft => self.move_cursor_left(),
                     BlinkCommand::MoveCursorLeftSelecting => self.move_cursor_left_selecting(),
                     BlinkCommand::MoveCursorLeftByWord => self.move_cursor_left_by_word(),
-                    BlinkCommand::MoveCursorLeftByWordSelecting => self.move_cursor_left_by_word_selecting(),
-                    BlinkCommand::MoveCursorLeftByWordParagraph => self.move_cursor_left_by_word_paragraph(),
+                    BlinkCommand::MoveCursorLeftByWordSelecting => {
+                        self.move_cursor_left_by_word_selecting()
+                    }
+                    BlinkCommand::MoveCursorLeftByWordParagraph => {
+                        self.move_cursor_left_by_word_paragraph()
+                    }
 
                     BlinkCommand::MoveCursorRight => self.move_cursor_right(),
                     BlinkCommand::MoveCursorRightSelecting => self.move_cursor_right_selecting(),
                     BlinkCommand::MoveCursorRightByWord => self.move_cursor_right_by_word(),
-                    BlinkCommand::MoveCursorRightByWordSelecting => self.move_cursor_right_by_word_selecting(),
-                    BlinkCommand::MoveCursorRightByWordParagraph => self.move_cursor_right_by_word_paragraph(),
+                    BlinkCommand::MoveCursorRightByWordSelecting => {
+                        self.move_cursor_right_by_word_selecting()
+                    }
+                    BlinkCommand::MoveCursorRightByWordParagraph => {
+                        self.move_cursor_right_by_word_paragraph()
+                    }
                     BlinkCommand::MoveCursorRightByWordEnd => self.move_cursor_right_by_word_end(),
 
                     BlinkCommand::MoveCusorBOL => self.move_cursor_bol(),
-                    BlinkCommand::MoveCusorBOLIntoInsertMode => self.move_cursor_bol_into_insert_mode(),
+                    BlinkCommand::MoveCusorBOLIntoInsertMode => {
+                        self.move_cursor_bol_into_insert_mode()
+                    }
                     BlinkCommand::MoveCusorBOLSelecting => self.move_cursor_bol_selecting(),
                     BlinkCommand::MoveCusorEOL => self.move_cursor_eol(),
-                    BlinkCommand::MoveCusorEOLIntoInsertMode => self.move_cursor_eol_into_insert_mode(),
+                    BlinkCommand::MoveCusorEOLIntoInsertMode => {
+                        self.move_cursor_eol_into_insert_mode()
+                    }
                     BlinkCommand::MoveCusorEOLSelecting => self.move_cursor_eol_selecting(),
 
                     // Editing
@@ -166,7 +182,9 @@ impl<'a> BlinkState<'a> {
                     BlinkCommand::DeleteWordBack => self.delete_word_back(),
                     BlinkCommand::DeleteWordForward => self.delete_word_forward(),
                     BlinkCommand::DeleteUntilEOL => self.delete_until_eol(),
-                    BlinkCommand::DeleteUntilEOLIntoInsertMode => self.delete_until_eol_into_insert_mode(),
+                    BlinkCommand::DeleteUntilEOLIntoInsertMode => {
+                        self.delete_until_eol_into_insert_mode()
+                    }
                     BlinkCommand::DeleteUntilHOL => self.delete_until_hol(),
 
                     BlinkCommand::Newline => self.newline(),
@@ -184,7 +202,7 @@ impl<'a> BlinkState<'a> {
                         if self.renderer.focus_area == FocusArea::Editor {
                             self.open_in_editor()
                         }
-                    },
+                    }
                 }
             }
         }
@@ -265,7 +283,7 @@ impl<'a> BlinkState<'a> {
     }
 
     pub fn open_in_editor(&mut self) {
-        // 1 - Restore the terminal before leaving the TUI.
+        //  Restore the terminal before leaving the TUI.
         self.renderer.restore();
 
         // Get the current content the `editor`.
@@ -277,14 +295,17 @@ impl<'a> BlinkState<'a> {
         write!(tmp, "{}", full_text).expect("Failed to write to temp file");
         let tmp_path = tmp.path().to_path_buf(); // Cloning the path here to use after we drop `tmp`.
 
-        // Close explicitly to free the reference to the `editor`.
-        drop(tmp);
-
         // TOOD: Put this into config or something.
-        let editor = "vim".to_string();
+        let editor = "nvim".to_string();
 
-        let status = Command::new(&editor).arg(&tmp_path).status().expect("Failed to spawn editor");
-        assert!(status.success(), "Editor exited with non-zero status. Keeping old content.");
+        let status = Command::new(&editor)
+            .arg(&tmp_path)
+            .status()
+            .expect("Failed to spawn editor");
+        assert!(
+            status.success(),
+            "Editor exited with non-zero status. Keeping old content."
+        );
 
         let new_body = std::fs::read_to_string(&tmp_path).expect("Failed to read edited file");
         // TODO?: remove_file(&tmp_path).ok() // Remove temp file.
@@ -301,7 +322,9 @@ impl<'a> BlinkState<'a> {
 
         // Initialize the TUI again.
         let mut terminal = self.renderer.init();
-        self.renderer.draw(&mut terminal).expect("Could not initialize the terminal again after opening the editor");
+        self.renderer
+            .draw(&mut terminal)
+            .expect("Could not initialize the terminal again after opening the editor");
     }
 
     //

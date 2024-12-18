@@ -13,9 +13,7 @@ fn main() -> Result<()> {
     let cli = CLI::parse();
 
     match &cli.commands {
-        Some(cli::Commands::Test) => {
-            println!("gotcha bitch");
-        }
+        Some(cli::Commands::Test) => println!("gotcha bitch"),
         None => {
             let config = BlinkConfig::load()?;
 
