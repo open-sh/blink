@@ -1,6 +1,0 @@
-# This is an example for the local config.
-# Serde maps each key from the `.toml` file to the fields
-# of the `BlinkConfig` struct.
-#
-# This is hot-reloadable.
-mock = "hi from the config"
