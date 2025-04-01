@@ -1,6 +1,0 @@
-[workspace]
-members = [ "crates/blink" , "crates/config", "crates/state", "crates/tui", "crates/utils"]
-resolver = "2"
-
-[workspace.dependencies]
-anyhow = "1.0.93"
